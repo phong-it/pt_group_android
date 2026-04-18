@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -16,6 +18,9 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   late GoogleMapController _mapController;
+  // THÊM 2 BIẾN NÀY
+  StreamSubscription? _recyclingSub;
+  StreamSubscription? _productSub;
   
   // Vị trí mặc định (Ví dụ: Đà Nẵng như trong database của bạn)
   static const LatLng _initialPosition = LatLng(16.0544, 108.2022);
@@ -51,7 +56,7 @@ class _MapScreenState extends State<MapScreen> {
 
   // Hàm lấy các trạm thu gom từ Firebase và tạo Marker
   void _loadRecyclingPoints() {
-    FirebaseFirestore.instance.collection('recycling_points').snapshots().listen((snapshot) {
+    _recyclingSub = FirebaseFirestore.instance.collection('recycling_points').snapshots().listen((snapshot) {
       Map<MarkerId, Marker> newMarkers = {};
       
       for (var doc in snapshot.docs) {
@@ -78,7 +83,7 @@ class _MapScreenState extends State<MapScreen> {
 
   // hàm lấy vị trí bán sp
   void _loadProductMarkers() {
-    FirebaseFirestore.instance.collection('products').snapshots().listen((snapshot) {
+    _productSub = FirebaseFirestore.instance.collection('products').snapshots().listen((snapshot) {
       Map<MarkerId, Marker> newMarkers = {};
       
       for (var doc in snapshot.docs) {
@@ -123,6 +128,14 @@ class _MapScreenState extends State<MapScreen> {
         _productMarkers = newMarkers;
       });
     });
+  }
+  
+  @override
+  void dispose() {
+    _mapController.dispose();
+    _recyclingSub?.cancel(); // Tắt lắng nghe trạm rác
+    _productSub?.cancel(); // Tắt lắng nghe đồ cũ
+    super.dispose();
   }
 
   @override
