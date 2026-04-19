@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:frontend/features/auth/providers/auth_provider.dart';
 import 'package:frontend/features/cart/screens/cart_screen.dart';
 import 'package:frontend/features/checkout/orders/screens/order_details_screen.dart';
 import 'package:frontend/features/products/providers/product_provider.dart';
+import 'package:frontend/features/store_map/providers/map_provider.dart';
 import 'package:frontend/main_wrapper.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
-import 'features/auth/login.dart'; 
+import 'features/auth/screens/login_screen.dart'; 
 
 // Đảm bảo import đúng file chứa CartProvider của Phong
 import 'features/cart/providers/cart_provider.dart'; 
@@ -31,6 +33,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => OrderProvider()), 
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => ProductProvider()),
+        ChangeNotifierProvider(create: (_) => MapProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
       child: const MyApp(),
     ),
