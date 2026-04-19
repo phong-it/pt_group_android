@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/features/profile/screens/profile_screen.dart';
 
 // 1. IMPORT CÁC FILE CỦA BẠN (NGƯỜI A)
 import 'features/products/screens/product_list_screen.dart';
@@ -27,6 +28,7 @@ class _MainWrapperState extends State<MainWrapper> {
     const MapScreen(),         // Index 1: Tab của A
     const NotificationScreen(),// Index 2: Tab của A
     CartScreen(),              // Index 3: Tab của B (Class trong file cart_page.dart của Phong)
+    ProfileScreen(),
   ];
 
   @override
@@ -77,6 +79,10 @@ class _MainWrapperState extends State<MainWrapper> {
           BottomNavigationBarItem(
             icon: Icon(Icons.shopping_cart), 
             label: 'Giỏ hàng'
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person), 
+            label: 'Profile'
           ),
         ],
       ),

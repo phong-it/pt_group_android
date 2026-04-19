@@ -4,6 +4,7 @@ import 'package:frontend/features/auth/providers/auth_provider.dart';
 import 'package:frontend/features/cart/screens/cart_screen.dart';
 import 'package:frontend/features/checkout/orders/screens/order_details_screen.dart';
 import 'package:frontend/features/products/providers/product_provider.dart';
+import 'package:frontend/features/profile/providers/user_provider.dart';
 import 'package:frontend/features/store_map/providers/map_provider.dart';
 import 'package:frontend/main_wrapper.dart';
 import 'package:provider/provider.dart';
@@ -35,6 +36,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ProductProvider()),
         ChangeNotifierProvider(create: (_) => MapProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
       ],
       child: const MyApp(),
     ),
