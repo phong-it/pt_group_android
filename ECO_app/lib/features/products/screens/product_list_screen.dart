@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart'; // Thư viện mới
+import 'package:frontend/features/products/providers/product_provider.dart';
+import 'package:provider/provider.dart';
 import '../models/product_model.dart';
 import 'product_detail_screen.dart';
 
@@ -51,6 +53,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
             color: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: TextField(
+              onChanged: (value) {
+                // Gọi Provider cập nhật từ khóa
+                context.read<ProductProvider>().updateSearchQuery(value);
+              },
               decoration: InputDecoration(
                 hintText: 'Bạn đang tìm đồ cũ gì?',
                 prefixIcon: const Icon(Icons.search, color: Colors.grey),
@@ -94,20 +100,22 @@ class _ProductListScreenState extends State<ProductListScreen> {
             child: RefreshIndicator(
               color: Colors.green,
               onRefresh: _onRefresh,
-              child: StreamBuilder<QuerySnapshot>(
-                // Lọc dữ liệu trên Firebase nếu có chọn Danh mục khác "Tất cả"
-                stream: _selectedCategory == 'Tất cả'
-                    ? FirebaseFirestore.instance.collection('products').orderBy('createdAt', descending: true).snapshots()
-                    : FirebaseFirestore.instance.collection('products').where('category', isEqualTo: _selectedCategory).snapshots(),
+              child: StreamBuilder<List<ProductModel>>(
+                // Lấy Stream đã qua bộ lọc từ Provider
+                stream: context.watch<ProductProvider>().getFilteredProducts(_selectedCategory),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator(color: Colors.green));
                   }
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return _buildEmptyState();
-                  }
+                 // 1. Lấy danh sách sản phẩm ra (Nếu null thì gán bằng danh sách rỗng [])
+                  final products = snapshot.data ?? [];
 
-                  final products = snapshot.data!.docs.map((doc) => ProductModel.fromFirestore(doc)).toList();
+                  // 2. Kiểm tra nếu danh sách trống thì hiện màn hình trống
+                  if (products.isEmpty) {
+                    // Bạn có thể truyền thêm biến để biết là trống do "Không có đồ" hay "Tìm không thấy"
+                    bool isSearching = context.read<ProductProvider>().searchQuery.isNotEmpty;
+                    return _buildEmptyState(isSearch: isSearching);
+                  }
 
                   return GridView.builder(
                     padding: const EdgeInsets.all(12),
@@ -120,7 +128,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     itemCount: products.length,
                     itemBuilder: (context, index) {
                       final product = products[index];
-                      return _buildProductCard(context, product);
+                      return _buildProductCard(context, product, key: ValueKey(product.id),);
                     },
                   );
                 },
@@ -133,7 +141,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   // WIDGET CON: Hiển thị khi không có dữ liệu
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState({bool isSearch = false}) {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(), // Giữ cho vẫn có thể vuốt để refresh
       child: Container(
@@ -144,7 +152,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
           children: [
             Icon(Icons.inbox_outlined, size: 80, color: Colors.grey[400]),
             const SizedBox(height: 16),
-            Text('Chưa có món đồ nào trong mục này!', style: TextStyle(color: Colors.grey[600])),
+            Text(
+              isSearch 
+                ? 'Không tìm thấy sản phẩm bạn cần!' 
+                : 'Chưa có món đồ nào trong mục này!', 
+              style: TextStyle(color: Colors.grey[600])
+            ),
           ],
         ),
       ),
@@ -152,8 +165,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   // WIDGET CON: Thiết kế Card sản phẩm "Hàng Real"
-  Widget _buildProductCard(BuildContext context, ProductModel product) {
+  Widget _buildProductCard(BuildContext context, ProductModel product, {Key? key}) {
     return InkWell(
+      key: key,
       onTap: () {
         Navigator.push(context, MaterialPageRoute(builder: (context) => ProductDetailScreen(product: product)));
       },

@@ -31,7 +31,7 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     // 2. Marker Sản phẩm (Màu cam)
-    for (var product in provider.products) {
+    for (var product in provider.filteredProducts) {
       if (product.lat == 0.0 && product.lng == 0.0) continue;
       
       markers.add(Marker(
@@ -40,11 +40,17 @@ class _MapScreenState extends State<MapScreen> {
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
         infoWindow: InfoWindow(title: product.name, snippet: '${product.price.toStringAsFixed(0)} đ'),
         onTap: () async {
+          // 1. Ẩn bàn phím ngay lập tức
+          FocusScope.of(context).unfocus();
+          
           // Gọi sang file UI Bottom Sheet vừa tách
           bool? shouldGoToDetail = await ProductPreviewSheet.show(context, product);
           if (shouldGoToDetail == true) {
             if (!context.mounted) return;
-            Navigator.push(context, MaterialPageRoute(builder: (context) => ProductDetailScreen(product: product)));
+            await Future.delayed(const Duration(milliseconds: 300));
+            Navigator.push(
+              context, 
+              MaterialPageRoute(builder: (context) => ProductDetailScreen(product: product)));
           }
         },
       ));
@@ -73,8 +79,14 @@ class _MapScreenState extends State<MapScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 15),
                   decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30), boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)]),
-                  child: const TextField(
-                    decoration: InputDecoration(hintText: 'Tìm điểm bán gần bạn...', border: InputBorder.none, icon: Icon(Icons.search, color: Colors.green)),
+                  child: TextField( 
+                    onChanged: (value) => mapProvider.updateSearchQuery(value),
+                    
+                    decoration: const InputDecoration( // Bạn có thể thêm const vào đây nếu muốn tối ưu
+                      hintText: 'Tìm điểm bán gần bạn...',
+                      border: InputBorder.none,
+                      icon: Icon(Icons.search, color: Colors.green),
+                    ),
                   ),
                 ),
               ),

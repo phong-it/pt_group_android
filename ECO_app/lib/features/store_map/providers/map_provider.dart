@@ -13,6 +13,8 @@ class MapProvider extends ChangeNotifier {
   StreamSubscription? _recyclingSub;
   StreamSubscription? _productSub;
 
+  String _searchQuery = '';
+
   MapProvider() {
     _getCurrentLocation();
     _loadRecyclingPoints();
@@ -45,6 +47,38 @@ class MapProvider extends ChangeNotifier {
       products = snapshot.docs.map((doc) => ProductModel.fromFirestore(doc)).toList();
       notifyListeners();
     });
+  }
+
+  // Getter để lấy danh sách sản phẩm đã được lọc
+  List<ProductModel> get filteredProducts {
+    if (_searchQuery.isEmpty) return products;
+    return products.where((p) => 
+      p.name.toLowerCase().contains(_searchQuery.toLowerCase())
+    ).toList();
+  }
+
+  // Hàm cập nhật từ khóa tìm kiếm
+  void updateSearchQuery(String query) {
+    _searchQuery = query;
+    notifyListeners();
+  }
+
+  // Hàm tính quãng đường (trả về String định dạng km)
+  String calculateDistance(double targetLat, double targetLng) {
+    if (currentPosition == null) return "N/A";
+    
+    double distanceInMeters = Geolocator.distanceBetween(
+      currentPosition!.latitude,
+      currentPosition!.longitude,
+      targetLat,
+      targetLng,
+    );
+
+    if (distanceInMeters < 1000) {
+      return "${distanceInMeters.toStringAsFixed(0)} m";
+    } else {
+      return "${(distanceInMeters / 1000).toStringAsFixed(1)} km";
+    }
   }
 
   @override

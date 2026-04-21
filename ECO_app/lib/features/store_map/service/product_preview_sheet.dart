@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:frontend/features/store_map/providers/map_provider.dart';
+import 'package:provider/provider.dart';
 import '../../products/models/product_model.dart';
 
 class ProductPreviewSheet {
+ 
   // Dùng static method để gọi hàm này ở bất cứ đâu mà không cần khởi tạo class
   static Future<bool?> show(BuildContext context, ProductModel product) {
+    // Lấy provider để tính khoảng cách
+    final mapProvider = Provider.of<MapProvider>(context, listen: false);
+    String distance = mapProvider.calculateDistance(product.lat, product.lng);
+
     return showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -47,6 +54,19 @@ class ProductPreviewSheet {
                         const SizedBox(height: 8),
                         Text('${product.price.toStringAsFixed(0)} đ', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
                         const SizedBox(height: 8),
+                        
+                        Row(
+                          children: [
+                            Icon(Icons.location_on, size: 14, color: Colors.grey),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Cách bạn $distance', 
+                              style: TextStyle(color: Colors.grey[600], fontSize: 13)
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),

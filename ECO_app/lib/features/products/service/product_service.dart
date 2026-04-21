@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:frontend/features/products/models/product_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 
@@ -92,7 +93,7 @@ class ProductService {
     }
   }
   
-// 3. HÀM SỬA SẢN PHẨM (PHIÊN BẢN TỐI GIẢN: CHỈ DÙNG ẢNH MỚI)
+  // 3. HÀM SỬA SẢN PHẨM (PHIÊN BẢN TỐI GIẢN: CHỈ DÙNG ẢNH MỚI)
   Future<String?> updateProduct({
     required String productId,
     required String name,
@@ -133,5 +134,22 @@ class ProductService {
     } catch (e) {
       return 'Lỗi khi cập nhật sản phẩm: $e';
     }
+  }
+
+  // Hàm lấy Stream danh sách sản phẩm dựa trên danh mục
+  Stream<List<ProductModel>> getProductsStream(String category) {
+    Query query = _firestore.collection('products');
+
+    // Nếu chọn danh mục cụ thể, Firebase sẽ lọc dùm mình
+    if (category != 'Tất cả') {
+      query = query.where('category', isEqualTo: category);
+    } else {
+      // Nếu là "Tất cả", sắp xếp theo ngày đăng mới nhất
+      query = query.orderBy('createdAt', descending: true);
+    }
+
+    return query.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) => ProductModel.fromFirestore(doc)).toList();
+    });
   }
 }

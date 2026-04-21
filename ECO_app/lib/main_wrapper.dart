@@ -38,18 +38,21 @@ class _MainWrapperState extends State<MainWrapper> {
       body: _screens[_currentIndex], 
       
       // NÚT BẤM NỔI Ở GIỮA
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.green,
-        child: const Icon(Icons.add, color: Colors.white, size: 30),
-        onPressed: () {
-          // Bấm vào thì đẩy sang màn hình Đăng bán
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddProductScreen()),
-          );
-        },
-      ),
+      floatingActionButton: _currentIndex == 0
+        ? FloatingActionButton(
+          backgroundColor: Colors.green,
+          child: const Icon(Icons.add, color: Colors.white, size: 30),
+          onPressed: () {
+            // Bấm vào thì đẩy sang màn hình Đăng bán
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AddProductScreen()),
+            );
+          },
+        ) : null,
+
+      // Xác định vị trí của nút (bạn đang để ở giữa)
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
 
       // Thanh điều hướng bên dưới
       bottomNavigationBar: BottomNavigationBar(
