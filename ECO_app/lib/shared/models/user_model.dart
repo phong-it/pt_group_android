@@ -37,4 +37,28 @@ class UserModel {
       ecoPoints: (data['eco_points'] ?? 0).toInt(), // Giữ tạm để phòng hờ
     );
   }
+
+  UserModel copyWith({
+    String? id,
+    String? authId,
+    String? name,
+    String? email,
+    String? avatar,
+    String? address,
+    String? phone,
+    String? role,
+    int? ecoPoints,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      authId: authId ?? this.authId,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      avatar: avatar ?? this.avatar,
+      address: address ?? this.address,
+      phone: phone ?? this.phone,
+      role: role ?? this.role,
+      ecoPoints: ecoPoints ?? this.ecoPoints,
+    );
+  }
 }

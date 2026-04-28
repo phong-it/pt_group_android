@@ -9,29 +9,26 @@ import 'package:frontend/features/store_map/providers/map_provider.dart';
 import 'package:frontend/main_wrapper.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
-import 'features/auth/screens/login_screen.dart'; 
+import 'features/auth/screens/login_screen.dart';
 
 // Đảm bảo import đúng file chứa CartProvider của Phong
-import 'features/cart/providers/cart_provider.dart'; 
+import 'features/cart/providers/cart_provider.dart';
 import 'features/checkout/orders/providers/order_provider.dart';
-import 'features/notifications/providers/notification_provider.dart';  
+import 'features/notifications/providers/notification_provider.dart';
 import 'core/constants/app_routes.dart';
 import 'features/checkout/screens/checkout_screen.dart';
-import 'features/chat/providers/chat_provider.dart'; 
+import 'features/chat/providers/chat_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
-        // Khai báo Provider của Phong vào đây!
         ChangeNotifierProvider(create: (_) => CartProvider()),
-        ChangeNotifierProvider(create: (_) => OrderProvider()), 
+        ChangeNotifierProvider(create: (_) => OrderProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => ProductProvider()),
         ChangeNotifierProvider(create: (_) => MapProvider()),
@@ -50,9 +47,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'EcoTrade',
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-      ),
+      theme: ThemeData(primarySwatch: Colors.green),
 
       routes: {
         // AppRoutes.checkout thực chất là chuỗi '/checkout'
