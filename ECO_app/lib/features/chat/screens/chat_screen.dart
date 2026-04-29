@@ -4,15 +4,14 @@ import 'package:intl/intl.dart';
 import '../models/chat_message_model.dart';
 import '../providers/chat_provider.dart';
 
-
 class ChatScreen extends StatefulWidget {
   final String roomId;
   final String receiverName;
 
-   ChatScreen({
+  const ChatScreen({
     super.key,
     required this.roomId,
-    required this.receiverName
+    required this.receiverName,
   });
 
   @override
@@ -21,40 +20,31 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _ctrl = TextEditingController();
-  final String currentUserId = "0"; // Thay bằng ID thật từ Firebase Auth của bạn
+  final String currentUserId = "0"; // Hardcode tạm thời như cũ của bạn
 
   @override
   Widget build(BuildContext context) {
-    final chatProv = context.read<ChatProvider>();
-
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: Text(widget.receiverName),
-        elevation: 1,
-      ),
+      appBar: AppBar(title: Text(widget.receiverName), elevation: 1),
       body: Column(
         children: [
-          // 1. Danh sách tin nhắn Real-time
+          // 1. Danh sách tin nhắn dùng Consumer
           Expanded(
-            child: StreamBuilder<List<ChatMessageModel>>(
-              stream: chatProv.getMessagesStream(widget.roomId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text('Đã xảy ra lỗi: ${snapshot.error}'));
-                }
-
-                final messages = snapshot.data ?? [];
+            child: Consumer<ChatProvider>(
+              builder: (context, chatProv, child) {
+                final messages = chatProv.messages;
 
                 if (messages.isEmpty) {
-                  return const Center(child: Text('Chưa có tin nhắn nào. Hãy bắt đầu trò chuyện!'));
+                  return const Center(
+                    child: Text(
+                      'Chưa có tin nhắn nào. Hãy bắt đầu trò chuyện!',
+                    ),
+                  );
                 }
 
                 return ListView.builder(
-                  reverse: true, // Quan trọng: Đẩy tin mới nhất xuống dưới
+                  reverse: true, // Đẩy tin mới nhất xuống dưới
                   padding: const EdgeInsets.all(15),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
@@ -68,21 +58,25 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
 
           // 2. Thanh nhập liệu
-          _buildInputArea(chatProv),
+          _buildInputArea(),
         ],
       ),
     );
   }
 
-  // Widget hiển thị từng bong bóng tin nhắn
+  // THÊM LẠI: Widget hiển thị từng bong bóng tin nhắn (Sửa lỗi 1)
   Widget _buildMessageBubble(ChatMessageModel message, bool isMe) {
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Column(
-        crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isMe
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           Container(
-            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.7,
+            ),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             margin: const EdgeInsets.symmetric(vertical: 4),
             decoration: BoxDecoration(
@@ -93,8 +87,12 @@ class _ChatScreenState extends State<ChatScreen> {
                 bottomLeft: Radius.circular(isMe ? 12 : 0),
                 bottomRight: Radius.circular(isMe ? 0 : 12),
               ),
-              boxShadow: [
-                BoxShadow(color: Colors.black12, blurRadius: 2, offset: Offset(0, 1))
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 2,
+                  offset: Offset(0, 1),
+                ),
               ],
             ),
             child: Text(
@@ -114,11 +112,14 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // Widget thanh nhập tin nhắn
-  Widget _buildInputArea(ChatProvider chatProv) {
+  // SỬA LẠI: Nút gửi gọi đúng hàm handleSendMessage (Sửa lỗi 2)
+  Widget _buildInputArea() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      decoration: BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: Colors.grey[300]!))),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Colors.grey[300]!)),
+      ),
       child: SafeArea(
         child: Row(
           children: [
@@ -133,7 +134,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                   fillColor: Colors.grey[200],
                   filled: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
                 ),
               ),
             ),
@@ -144,11 +148,16 @@ class _ChatScreenState extends State<ChatScreen> {
                 icon: const Icon(Icons.send, color: Colors.white),
                 onPressed: () {
                   if (_ctrl.text.trim().isEmpty) return;
-                  chatProv.sendMessage(
+
+                  // Dùng context.read để gọi event mà không build lại toàn bộ UI
+                  context.read<ChatProvider>().handleSendMessage(
+                    DateTime.now().millisecondsSinceEpoch
+                        .toString(), // Tạo ID ngẫu nhiên bằng Timestamp
+                    _ctrl.text.trim(),
                     widget.roomId,
                     currentUserId,
-                    _ctrl.text.trim(),
                   );
+
                   _ctrl.clear();
                 },
               ),
