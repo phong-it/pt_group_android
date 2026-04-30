@@ -55,7 +55,14 @@ class ProductPreviewSheet {
                         Text('${product.price.toStringAsFixed(0)} đ', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
                         const SizedBox(height: 8),
                         
-                        Row(
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                          child: Text('Mới ${product.conditionPercent}%', style: const TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold)),
+                        ),
+                        const SizedBox(height: 8),
+
+                         Row(
                           children: [
                             Icon(Icons.location_on, size: 14, color: Colors.grey),
                             const SizedBox(width: 4),
@@ -65,28 +72,59 @@ class ProductPreviewSheet {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-                          child: Text('Mới ${product.conditionPercent}%', style: const TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold)),
-                        ),
                       ],
                     ),
                   ),
                 ],
               ),
+              
               const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: () => Navigator.pop(context, true), // Trả về true khi bấm
-                child: const Text('Xem chi tiết', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              Row(
+                children: [
+                  // Nút Chỉ đường (Nút phụ)
+                  Expanded(
+                    flex: 1,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        side: const BorderSide(color: Colors.green),
+                      ),
+                      icon: const Icon(Icons.directions, color: Colors.green),
+                      label: const Text('Chỉ đường', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                      onPressed: () async {
+                        // Lấy Provider (nhớ listen: false vì nằm trong sự kiện click)
+                        final mapProvider = Provider.of<MapProvider>(context, listen: false);
+                        
+                        // Gọi hàm vẽ đường
+                        await mapProvider.drawRouteTo(product.lat, product.lng);
+                        
+                        // Tùy chọn: Đóng cái Bottom Sheet lại cho người dùng nhìn rõ đường đi
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12), // Khoảng cách 2 nút
+                  
+                  // Nút Xem chi tiết (Nút chính)
+                  Expanded(
+                    flex: 1,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green, 
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Xem chi tiết', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
+              // ...
             ],
           ),
         );

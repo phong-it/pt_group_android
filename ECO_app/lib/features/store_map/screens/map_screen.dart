@@ -69,6 +69,7 @@ class _MapScreenState extends State<MapScreen> {
                 initialCameraPosition: const CameraPosition(target: _initialPosition, zoom: 14),
                 onMapCreated: (controller) => _mapController = controller,
                 markers: _buildMarkers(mapProvider), // Tự động vẽ lại khi Provider báo có data mới
+                polylines: mapProvider.polylines,
                 myLocationEnabled: true,
                 myLocationButtonEnabled: false,
                 mapToolbarEnabled: false,

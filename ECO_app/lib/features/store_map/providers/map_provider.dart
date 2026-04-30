@@ -1,9 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/recycling_point_model.dart';
 import '../../products/models/product_model.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class MapProvider extends ChangeNotifier {
   Position? currentPosition;
@@ -14,6 +18,10 @@ class MapProvider extends ChangeNotifier {
   StreamSubscription? _productSub;
 
   String _searchQuery = '';
+
+  Set<Polyline> polylines = {};
+
+  final String _googleApiKey = "AIzaSyAls2O1UQLkVJD4zZEz0fsJKYrSS-PN-Rw";
 
   MapProvider() {
     _getCurrentLocation();
@@ -78,6 +86,52 @@ class MapProvider extends ChangeNotifier {
       return "${distanceInMeters.toStringAsFixed(0)} m";
     } else {
       return "${(distanceInMeters / 1000).toStringAsFixed(1)} km";
+    }
+  }
+
+  // 2. Hàm gọi API và vẽ đường
+  Future<void> drawRouteTo(double targetLat, double targetLng) async {
+    if (currentPosition == null) return;
+
+    double startLat = currentPosition!.latitude;
+    double startLng = currentPosition!.longitude;
+
+    // Gửi request xin đường đi từ Google
+    String url = "https://maps.googleapis.com/maps/api/directions/json?origin=$startLat,$startLng&destination=$targetLat,$targetLng&key=$_googleApiKey";
+    
+    try {
+      var response = await http.get(Uri.parse(url));
+      var data = jsonDecode(response.body);
+
+      if (data['status'] == 'OK') {
+        // Lấy chuỗi mã hóa Polyline từ cục JSON trả về
+        String encodedPolyline = data['routes'][0]['overview_polyline']['points'];
+        
+        List<PointLatLng> decodedPoints = PolylinePoints.decodePolyline(encodedPolyline);
+        
+        // Chuyển đổi PointLatLng sang LatLng mà GoogleMap hiểu được
+        List<LatLng> routeCoords = decodedPoints
+            .map((point) => LatLng(point.latitude, point.longitude))
+            .toList();
+        
+        // Xóa đường cũ đi (nếu có) và tạo đường mới
+        polylines.clear();
+        polylines.add(
+          Polyline(
+            polylineId: const PolylineId("route_1"),
+            color: Colors.blue, // Màu của đường đi
+            width: 5, // Độ dày của đường
+            points: routeCoords,
+          ),
+        );
+        
+        // Báo cho UI biết để vẽ lại!
+        notifyListeners();
+      } else {
+        debugPrint("Lỗi từ Google API: ${data['status']} - ${data['error_message']}");
+      }
+    } catch (e) {
+      debugPrint("Lỗi khi gọi API: $e");
     }
   }
 
