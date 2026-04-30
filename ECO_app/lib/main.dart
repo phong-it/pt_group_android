@@ -10,6 +10,7 @@ import 'package:frontend/main_wrapper.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'features/auth/screens/login_screen.dart';
+import 'package:socket_io_client/socket_io_client.dart';
 
 // Đảm bảo import đúng file chứa CartProvider của Phong
 import 'features/cart/providers/cart_provider.dart';
@@ -18,6 +19,8 @@ import 'features/notifications/providers/notification_provider.dart';
 import 'core/constants/app_routes.dart';
 import 'features/checkout/screens/checkout_screen.dart';
 import 'features/chat/providers/chat_provider.dart';
+import 'features/chat/repositories/chat_repository.dart';
+import 'features/chat/services/socket_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,11 +32,26 @@ void main() async {
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => ProductProvider()),
         ChangeNotifierProvider(create: (_) => MapProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
+
+        // --- PHẦN CHAT: Sắp xếp theo thứ tự phụ thuộc ---
+
+        // 1. Tạo "Gốc": SocketService
+        Provider(create: (_) => SocketService()),
+
+        // 2. Tạo Repository: Lấy SocketService ở trên bỏ vào
+        ProxyProvider<SocketService, ChatRepository>(
+          update: (_, socketService, __) => ChatRepository(socketService),
+        ),
+
+        // 3. Tạo Provider: Lấy ChatRepository ở trên bỏ vào
+        ChangeNotifierProxyProvider<ChatRepository, ChatProvider>(
+          create: (context) => ChatProvider(context.read<ChatRepository>()),
+          update: (context, repo, previous) => previous ?? ChatProvider(repo),
+        ),
       ],
       child: const MyApp(),
     ),

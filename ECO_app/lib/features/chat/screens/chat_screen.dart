@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/chat_message_model.dart';
 import '../providers/chat_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ChatScreen extends StatefulWidget {
   final String roomId;
@@ -20,7 +21,17 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _ctrl = TextEditingController();
-  final String currentUserId = "0"; // Hardcode tạm thời như cũ của bạn
+  final String currentUserId =
+      FirebaseAuth.instance.currentUser?.uid ?? "khach_vang_lai";
+
+  @override
+  void initState() {
+    super.initState();
+    // Báo cho "Quản gia" Provider biết để dọn dẹp UI và gọi Repository
+    Future.microtask(() {
+      context.read<ChatProvider>().joinRoom(widget.roomId);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +161,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   if (_ctrl.text.trim().isEmpty) return;
 
                   // Dùng context.read để gọi event mà không build lại toàn bộ UI
-                  context.read<ChatProvider>().handleSendMessage(
+                  context.read<ChatProvider>().SendMessage(
                     DateTime.now().millisecondsSinceEpoch
                         .toString(), // Tạo ID ngẫu nhiên bằng Timestamp
                     _ctrl.text.trim(),

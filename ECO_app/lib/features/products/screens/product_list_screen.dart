@@ -5,6 +5,7 @@ import 'package:frontend/features/products/providers/product_provider.dart';
 import 'package:provider/provider.dart';
 import '../models/product_model.dart';
 import 'product_detail_screen.dart';
+import '../../chat/screens/chat_list_screen.dart';
 
 class ProductListScreen extends StatefulWidget {
   const ProductListScreen({super.key});
@@ -57,6 +58,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
             icon: const Icon(Icons.message_outlined, color: Colors.black87),
             onPressed: () {
               // TODO: Mở màn hình Chat ( kho tin nhắn ) - chat_storage_screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ChatListScreen()),
+              );
             },
           ),
         ],
