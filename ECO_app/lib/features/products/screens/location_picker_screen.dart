@@ -10,24 +10,45 @@ class LocationPickerScreen extends StatefulWidget {
 }
 
 class _LocationPickerScreenState extends State<LocationPickerScreen> {
-  // Mặc định là Đà Nẵng
-  LatLng _centerPosition = const LatLng(16.0544, 108.2022); 
+  LatLng _centerPosition = const LatLng(16.0544, 108.2022); // Đà Nẵng mặc định
   GoogleMapController? _mapController;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    // Vừa vào thì cố gắng nhảy đến vị trí hiện tại cho tiện
-    _getCurrentLocation(); 
+    _determinePosition();
   }
 
-  Future<void> _getCurrentLocation() async {
+  /// Xử lý cấp quyền và lấy vị trí hiện tại chuyên nghiệp
+  Future<void> _determinePosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
     try {
-      Position position = await Geolocator.getCurrentPosition().timeout(const Duration(seconds: 3));
-      setState(() => _centerPosition = LatLng(position.latitude, position.longitude));
+      serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) throw 'Dịch vụ định vị bị tắt.';
+
+      permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied)
+          throw 'Quyền truy cập bị từ chối.';
+      }
+
+      if (permission == LocationPermission.deniedForever)
+        throw 'Quyền bị từ chối vĩnh viễn.';
+
+      Position position = await Geolocator.getCurrentPosition().timeout(
+        const Duration(seconds: 5),
+      );
+      _centerPosition = LatLng(position.latitude, position.longitude);
+
       _mapController?.animateCamera(CameraUpdate.newLatLng(_centerPosition));
     } catch (e) {
-      print('Bỏ qua lấy GPS: $e');
+      debugPrint('Lỗi GPS: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -35,46 +56,84 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chọn vị trí bán', style: TextStyle(color: Colors.black)),
+        title: const Text(
+          'Ghim vị trí bán',
+          style: TextStyle(color: Colors.black, fontSize: 18),
+        ),
         backgroundColor: Colors.white,
+        elevation: 0.5,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: Stack(
         children: [
           GoogleMap(
-            initialCameraPosition: CameraPosition(target: _centerPosition, zoom: 15),
+            initialCameraPosition: CameraPosition(
+              target: _centerPosition,
+              zoom: 16,
+            ),
             onMapCreated: (controller) => _mapController = controller,
-            // SỰ KIỆN NÀY BẮT LẤY TỌA ĐỘ TÂM BẢN ĐỒ MỖI KHI NGƯỜI DÙNG VUỐT
-            onCameraMove: (position) {
-              _centerPosition = position.target; 
-            },
+            onCameraMove: (pos) => _centerPosition = pos.target,
             myLocationEnabled: true,
+            myLocationButtonEnabled: false, // Tự custom nút cho đẹp
+            mapToolbarEnabled: false,
           ),
-          
-          // CÂY KIM MÀU ĐỎ CỐ ĐỊNH Ở CHÍNH GIỮA MÀN HÌNH
-          const Center(
+
+          // Custom Pin chính giữa màn hình (Senior thường dùng Widget thay vì Icon đơn thuần)
+          Center(
             child: Padding(
-              padding: EdgeInsets.only(bottom: 40), // Đẩy lên tí cho cái chóp nhọn chỉ đúng tâm
-              child: Icon(Icons.location_on, size: 50, color: Colors.red),
+              padding: const EdgeInsets.only(bottom: 35),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black87,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      "Ghim tại đây",
+                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+                  const Icon(Icons.location_on, size: 45, color: Colors.red),
+                ],
+              ),
             ),
           ),
 
-          // NÚT XÁC NHẬN DÍNH Ở ĐÁY
+          if (_isLoading) const Center(child: CircularProgressIndicator()),
+
+          // Nút xác nhận
           Positioned(
-            bottom: 20, left: 20, right: 20,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green, 
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            bottom: 30,
+            left: 20,
+            right: 20,
+            child: SizedBox(
+              height: 55,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green[700],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  elevation: 5,
+                ),
+                onPressed: () => Navigator.pop(context, _centerPosition),
+                child: const Text(
+                  'XÁC NHẬN VỊ TRÍ',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
               ),
-              onPressed: () {
-                // Trả tọa độ vừa chốt về lại màn hình Form nhập liệu
-                Navigator.pop(context, _centerPosition);
-              },
-              child: const Text('XÁC NHẬN VỊ TRÍ NÀY', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
             ),
-          )
+          ),
         ],
       ),
     );

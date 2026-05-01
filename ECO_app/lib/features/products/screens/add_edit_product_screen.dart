@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -25,7 +25,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   String _selectedCategory = 'Điện tử';
   double _conditionPercent = 90;
   LatLng? _selectedLocation;
-  List<File> _selectedImages = []; // Biến lưu ảnh lấy từ file con
+  List<XFile> _selectedImages = []; // Biến lưu ảnh lấy từ file con
 
   final List<String> _categories = [
     'Điện tử',
@@ -307,7 +307,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         description: _descController.text.trim(),
         price: double.tryParse(_priceController.text.trim()) ?? 0,
         conditionPercent: _conditionPercent.toInt(),
-        newImages: _selectedImages,
+        images: _selectedImages,
         lat: _selectedLocation!.latitude,
         lng: _selectedLocation!.longitude,
       );

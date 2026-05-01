@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:frontend/features/products/models/product_model.dart';
 import 'package:http/http.dart' as http;
@@ -7,25 +8,30 @@ import 'package:geolocator/geolocator.dart';
 
 class ProductService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
+
   // DÁN API KEY CỦA BẠN VÀO ĐÂY:
   final String _imgbbApiKey = 'ca1f6475cd3f814e5abc0556b6c1f210';
 
   // 1. HÀM PHỤ: Đẩy 1 ảnh lên ImgBB và lấy link về
-  Future<String?> _uploadImageToImgBB(File imageFile) async {
+  Future<String?> _uploadImageToImgBB(XFile imageFile) async {
     try {
-      var request = http.MultipartRequest(
-        'POST', 
-        Uri.parse('https://api.imgbb.com/1/upload?key=$_imgbbApiKey')
+      final bytes = await imageFile.readAsBytes();
+
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('https://api.imgbb.com/1/upload?key=$_imgbbApiKey'),
       );
-      
-      request.files.add(await http.MultipartFile.fromPath('image', imageFile.path));
-      var response = await request.send();
+
+      request.files.add(
+        http.MultipartFile.fromBytes('image', bytes, filename: imageFile.name),
+      );
+
+      final response = await request.send();
 
       if (response.statusCode == 200) {
-        var responseData = await response.stream.bytesToString();
-        var jsonResult = json.decode(responseData);
-        return jsonResult['data']['url']; // Trả về link ảnh thật (https://i.ibb.co/...)
+        final responseData = await response.stream.bytesToString();
+        final jsonResult = json.decode(responseData);
+        return jsonResult['data']['url'];
       }
       return null;
     } catch (e) {
@@ -42,16 +48,15 @@ class ProductService {
     required String description,
     required double price,
     required int conditionPercent,
-    required List<File> images,
+    required List<XFile> images,
     required double lat, // BẮT BUỘC TRUYỀN LAT
     required double lng, // BẮT BUỘC TRUYỀN LNG
   }) async {
     try {
-      
       List<String> imageUrls = [];
 
       // Bước A: Vòng lặp đẩy từng ảnh lên ImgBB
-      for (File image in images) {
+      for (XFile image in images) {
         String? downloadUrl = await _uploadImageToImgBB(image);
         if (downloadUrl != null) {
           imageUrls.add(downloadUrl);
@@ -64,14 +69,14 @@ class ProductService {
       DocumentReference docRef = _firestore.collection('products').doc();
 
       await docRef.set({
-        'sellerId': sellerId, 
+        'sellerId': sellerId,
         'name': name,
         'category': category,
         'description': description,
         'price': price,
         'conditionPercent': conditionPercent,
         'status': 'available',
-        'imageUrls': imageUrls, 
+        'imageUrls': imageUrls,
         'lat': lat, // toạ độ
         'lng': lng,
         'createdAt': FieldValue.serverTimestamp(),
@@ -81,8 +86,8 @@ class ProductService {
     } catch (e) {
       return 'Lỗi khi đăng sản phẩm: $e';
     }
-   
   }
+
   // HÀM XÓA SẢN PHẨM
   Future<String?> deleteProduct(String productId) async {
     try {
@@ -92,7 +97,7 @@ class ProductService {
       return 'Lỗi khi xóa sản phẩm: $e';
     }
   }
-  
+
   // 3. HÀM SỬA SẢN PHẨM (PHIÊN BẢN TỐI GIẢN: CHỈ DÙNG ẢNH MỚI)
   Future<String?> updateProduct({
     required String productId,
@@ -101,7 +106,7 @@ class ProductService {
     required String description,
     required double price,
     required int conditionPercent,
-    required List<File> newImages, // Bắt buộc người dùng phải chọn lại ảnh
+    required List<XFile> newImages, // Bắt buộc người dùng phải chọn lại ảnh
     required double lat, // BẮT BUỘC TRUYỀN LAT
     required double lng, // BẮT BUỘC TRUYỀN LNG
   }) async {
@@ -109,8 +114,10 @@ class ProductService {
       List<String> imageUrls = [];
 
       // Up lại toàn bộ ảnh mới lên ImgBB
-      for (File image in newImages) {
-        String? downloadUrl = await _uploadImageToImgBB(image); // Lời gọi hàm cũ của bạn
+      for (XFile image in newImages) {
+        String? downloadUrl = await _uploadImageToImgBB(
+          image,
+        ); // Lời gọi hàm cũ của bạn
         if (downloadUrl != null) {
           imageUrls.add(downloadUrl);
         } else {
@@ -125,12 +132,12 @@ class ProductService {
         'description': description,
         'price': price,
         'conditionPercent': conditionPercent,
-        'imageUrls': imageUrls, 
+        'imageUrls': imageUrls,
         'lat': lat,
         'lng': lng,
       });
 
-      return null; 
+      return null;
     } catch (e) {
       return 'Lỗi khi cập nhật sản phẩm: $e';
     }
@@ -149,7 +156,9 @@ class ProductService {
     }
 
     return query.snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => ProductModel.fromFirestore(doc)).toList();
+      return snapshot.docs
+          .map((doc) => ProductModel.fromFirestore(doc))
+          .toList();
     });
   }
 }
