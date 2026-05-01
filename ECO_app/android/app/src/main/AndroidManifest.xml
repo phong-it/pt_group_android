@@ -36,17 +36,8 @@
         <meta-data 
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyAls2O1UQLkVJD4zZEz0fsJKYrSS-PN-Rw" 
-            />
-        <queries>
-            <intent>
-                <action android:name="android.intent.action.VIEW" />
-                <data android:scheme="https" />
-            </intent>
-            <intent>
-                <action android:name="android.intent.action.VIEW" />
-                <data android:scheme="google.navigation" />
-            </intent>
-        </queries>
+        />
+        
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
