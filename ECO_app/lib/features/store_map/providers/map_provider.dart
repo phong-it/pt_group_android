@@ -21,7 +21,7 @@ class MapProvider extends ChangeNotifier {
 
   Set<Polyline> polylines = {};
 
-  final String _googleApiKey = "AIzaSyDOqTkJNbInhFVYQHTMUfBHEpDVIh89dwI";
+  final String _googleApiKey = "AIzaSyB5E-KutKkmIna_WyvH4ib5qgI2xZBmyyw";
 
   MapProvider() {
     _getCurrentLocation();
