@@ -6,7 +6,7 @@ class SocketService {
   void connect() {
     // Lưu ý: Dùng 10.0.2.2 nếu dùng Emulator Android, hoặc IP thật của máy tính
     socket = IO.io(
-      'http://localhost:3001',
+      'http://172.16.0.172:3001',
       IO.OptionBuilder().setTransports(['websocket']).build(),
     );
     socket.connect();
