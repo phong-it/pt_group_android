@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Giữ lại Firebase Auth
+import 'package:frontend/features/products/service/product_service.dart';
 import 'package:provider/provider.dart';
 import '../models/product_model.dart';
 import '../screens/add_edit_product_screen.dart';
@@ -156,6 +157,59 @@ class ProductBottomBar extends StatelessWidget {
   }
 
   Future<void> _handleDelete(BuildContext context) async {
-    // Logic hiển thị dialog xóa cũ của bạn
+    // 1. Hiển thị hộp thoại xác nhận trước khi xóa
+    final bool? confirm = await showDialog(
+      context: context,
+      builder: (BuildContext ctx) {
+        return AlertDialog(
+          title: const Text('Xác nhận xóa'),
+          content: const Text('Bạn có chắc chắn muốn xóa tin đăng bán này không? Hành động này không thể hoàn tác.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false), // Trả về false nếu Hủy
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () => Navigator.pop(ctx, true), // Trả về true nếu Đồng ý
+              child: const Text('Xóa ngay', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+
+    // Nếu người dùng chọn "Hủy" hoặc bấm ra ngoài hộp thoại
+    if (confirm != true) return;
+
+    // 2. Gọi hàm xóa từ ProductService (Nhớ import ProductService vào file này nhé)
+    // Thêm loading UX (tùy chọn nhưng nên có)
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Đang xóa sản phẩm...')),
+    );
+
+    // Gọi API xóa (Lưu ý: Bạn phải truyền product.id vào)
+    final error = await ProductService().deleteProduct(product.id);
+
+    // 3. Xử lý kết quả trả về
+    if (error == null) {
+      // Xóa thành công
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đã xóa tin đăng thành công!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      // Xóa xong thì thoát khỏi màn hình chi tiết sản phẩm
+      Navigator.pop(context); 
+    } else {
+      // Xóa thất bại (do lỗi mạng hoặc quyền Firebase)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

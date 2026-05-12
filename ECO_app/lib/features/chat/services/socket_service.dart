@@ -1,27 +1,15 @@
 import 'package:socket_io_client/socket_io_client.dart' as IO;
-import '../../../core/network/api_config.dart';
 
 class SocketService {
   late IO.Socket socket;
 
   void connect() {
-    print("Đang kết nối Socket tới: ${ApiConfig.socketUrl}");
-
+    // Lưu ý: Dùng 10.0.2.2 nếu dùng Emulator Android, hoặc IP thật của máy tính
     socket = IO.io(
-      ApiConfig.socketUrl, // <-- Dùng biến dynamic ở đây
-      IO.OptionBuilder()
-          .setTransports(['websocket']) // Bắt buộc để chạy mượt trên Flutter
-          .enableAutoConnect() // Tự động kết nối lại nếu rớt mạng
-          .build(),
+      'http://172.16.0.172:3001',
+      IO.OptionBuilder().setTransports(['websocket']).build(),
     );
-
     socket.connect();
-
-    socket.onConnect((_) {
-      print('Đã kết nối Socket thành công!');
-    });
-
-    socket.onConnectError((data) => print('Lỗi kết nối Socket: $data'));
   }
 
   void joinRoom(String roomId) => socket.emit('join_room', roomId);

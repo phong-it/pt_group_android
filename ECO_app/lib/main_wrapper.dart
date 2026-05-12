@@ -3,7 +3,6 @@ import 'package:frontend/features/profile/screens/profile_screen.dart';
 
 // 1. IMPORT CÁC FILE CỦA BẠN (NGƯỜI A)
 import 'features/products/screens/product_list_screen.dart';
-import 'features/store_map/screens/map_screen.dart';
 import 'features/notifications/screens/notification_screen.dart';
 import 'features/products/screens/add_edit_product_screen.dart';
 
@@ -25,7 +24,6 @@ class _MainWrapperState extends State<MainWrapper> {
   // Danh sách 4 cánh cửa (4 màn hình chính)
   final List<Widget> _screens = [
     const ProductListScreen(), // Index 0: Tab của A
-    const MapScreen(),         // Index 1: Tab của A
     const NotificationScreen(),// Index 2: Tab của A
     CartScreen(),              // Index 3: Tab của B (Class trong file cart_page.dart của Phong)
     ProfileScreen(),
@@ -72,10 +70,6 @@ class _MainWrapperState extends State<MainWrapper> {
             label: 'Chợ đồ cũ'
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.map), 
-            label: 'Bản đồ'
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.notifications), 
             label: 'Thông báo'
           ),
@@ -85,7 +79,7 @@ class _MainWrapperState extends State<MainWrapper> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person), 
-            label: 'Profile'
+            label: 'Cá nhân'
           ),
         ],
       ),
