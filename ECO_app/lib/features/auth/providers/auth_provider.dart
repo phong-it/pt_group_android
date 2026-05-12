@@ -42,7 +42,10 @@ class AuthProvider extends ChangeNotifier {
           password: password,
         );
       } else {
-        if (name == null || name.isEmpty || address == null || address.isEmpty) {
+        if (name == null ||
+            name.isEmpty ||
+            address == null ||
+            address.isEmpty) {
           errorMessage = "Vui lòng nhập đầy đủ Họ tên và Địa chỉ!";
         } else {
           errorMessage = await _authService.signUp(
@@ -63,4 +66,11 @@ class AuthProvider extends ChangeNotifier {
 
     return errorMessage;
   }
+
+  // THÊM 2 GETTER NÀY ĐỂ UI DỄ DÀNG LẤY TOKEN & UID
+  Future<String?> getUserToken() async {
+    return await _authService.getIdToken();
+  }
+
+  String? get userId => _authService.currentUserId;
 }

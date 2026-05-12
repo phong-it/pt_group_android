@@ -1,0 +1,30 @@
+const express = require('express');
+const router = express.Router();
+
+// 1. Import Middlewares
+const verifyToken = require('../middlewares/authMiddleware');
+
+// 2. Import Controllers
+const { processCheckout } = require('../controllers/checkoutController');
+const { syncCart } = require('../controllers/cartController');
+const { getOrders } = require('../controllers/orderController');
+
+// ==========================================
+// 3. ĐỊNH NGHĨA CÁC ROUTES
+// ==========================================
+
+// Route thanh toán
+router.post('/checkout', verifyToken, processCheckout);
+
+// Route đồng bộ giỏ hàng (QUAN TRỌNG: Đã thêm verifyToken vào giữa)
+router.post('/cart/sync', verifyToken, syncCart);
+
+// API Lấy danh sách đơn hàng
+router.get('/orders', verifyToken, getOrders); // <-- Gọi hàm getOrders
+
+// Các route tương lai:
+// router.post('/vouchers/redeem', verifyToken, redeemVoucherController);
+// router.post('/eco/pickup', verifyToken, completePickupController);
+
+// LUÔN ĐỂ LỆNH NÀY Ở DƯỚI CÙNG CỦA FILE
+module.exports = router;

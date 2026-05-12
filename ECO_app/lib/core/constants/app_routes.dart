@@ -9,4 +9,5 @@ class AppRoutes {
   static const notifications = '/notifications';
 
   static const String orderDetail = '/order-detail';
+  static const String orderHistory = '/order-history';
 }
