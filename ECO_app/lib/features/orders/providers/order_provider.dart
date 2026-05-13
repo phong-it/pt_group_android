@@ -19,6 +19,18 @@ class OrderProvider extends ChangeNotifier {
 
   final String apiUrl = ApiConfig.baseUrl;
 
+  // Senior Tip: Viết hàm cập nhật trạng thái từ Socket
+  void updateStatusFromSocket(String orderId, String newStatus) {
+    if (_currentOrder != null &&
+        (_currentOrder!.id == orderId || _currentOrder!.orderCode == orderId)) {
+      _currentOrder!.status = OrderStatus.values.firstWhere(
+        (e) => e.name == newStatus,
+        orElse: () => _currentOrder!.status,
+      );
+      notifyListeners(); // UI tự động cập nhật mà không cần load lại trang
+    }
+  }
+
   void setCurrentOrderById(String id) {
     _currentOrder = _orders.firstWhere((o) => o.id == id);
     notifyListeners();
@@ -54,49 +66,44 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
-  // 2. TẢI CHI TIẾT 1 ĐƠN HÀNG (Dùng cho trang Details)
+  // Thay vì fetch cả list, hãy yêu cầu Backend cung cấp API chi tiết
   Future<void> fetchOrderById(String orderId, String token) async {
     _setLoading(true);
-
-    // Tối ưu: Kiểm tra xem đơn hàng đã có sẵn trong List chưa để hiện ngay
-    final existingOrder = _orders.indexWhere((o) => o.id == orderId);
-    if (existingOrder != -1) {
-      _currentOrder = _orders[existingOrder];
-      // Vẫn nên gọi API để cập nhật status mới nhất từ server
-    }
+    _errorMessage = null; // Reset lỗi cũ
 
     try {
-      // Senior Tip: Nên có API riêng /api/orders/$orderId
       final response = await http.get(
-        Uri.parse('$apiUrl/orders'),
+        Uri.parse('${ApiConfig.baseUrl}/orders/$orderId'),
         headers: _getHeaders(token),
       );
 
+      // Senior Rule: Luôn kiểm tra StatusCode trước khi parse
       if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-        final List<dynamic> ordersData = responseData['data'];
-        print(
-          "--- DEBUG: Danh sách đơn hàng từ Server có ${ordersData.length} mục ---",
-        );
+        final decoded = json.decode(response.body);
 
-        final targetOrderJson = ordersData.firstWhere((item) {
-          print("So sánh: ${item['id']} với $orderId"); // Xem nó có khớp không
-          return item['id'] == orderId;
-        }, orElse: () => null);
+        // Kiểm tra xem dữ liệu nằm ở 'data' hay nằm trực tiếp ở root
+        final dynamic rawData = (decoded is Map && decoded.containsKey('data'))
+            ? decoded['data']
+            : decoded;
 
-        if (targetOrderJson != null) {
-          print("--- DEBUG: Đã tìm thấy đơn hàng! ---");
-          _currentOrder = OrderModel.fromJson(targetOrderJson, orderId);
+        if (rawData != null && rawData is Map<String, dynamic>) {
+          _currentOrder = OrderModel.fromJson(rawData, orderId);
         } else {
-          print("--- DEBUG: KHÔNG tìm thấy ID $orderId trong danh sách ---");
-          _currentOrder = null;
+          _errorMessage = "Định dạng dữ liệu không hợp lệ";
         }
+      } else {
+        // Xử lý các lỗi 404, 401, 500 một cách tường minh
+        final errorData = json.decode(response.body);
+        _errorMessage =
+            errorData['error'] ?? "Lỗi không xác định (${response.statusCode})";
       }
     } catch (e) {
-      print("Lỗi: $e");
+      _errorMessage =
+          "Không thể kết nối tới máy chủ. Vui lòng kiểm tra internet.";
+      debugPrint("Senior Log - fetchOrderById Error: $e");
     } finally {
       _setLoading(false);
-      notifyListeners();
+      notifyListeners(); // Luôn notify để UI biết đã load xong hoặc có lỗi
     }
   }
 

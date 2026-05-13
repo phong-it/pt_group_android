@@ -1,55 +1,39 @@
-enum OrderStatus { pending, confirming, shipping, delivered, cancelled }
-
-enum PaymentStatus { unpaid, paid }
+// order_model.dart
+enum OrderStatus {
+  pending, // Chờ xử lý
+  confirmed, // Đã xác nhận (Backend gọi là confirmed)
+  picked_up, // Shipper đã lấy hàng (Bổ sung cho khớp Backend)
+  shipping, // Đang giao
+  delivered, // Đã giao
+  cancelled, // Đã hủy
+}
 
 class OrderModel {
-  final String id;
-  final String orderCode;
+  final String id; // Document ID của Firebase
+  final String orderCode; // Mã ECO-xxxx
   final String address;
-  final double totalAmount;
-  final double discount;
   final double finalAmount;
   OrderStatus status;
-  PaymentStatus paymentStatus;
 
   OrderModel({
     required this.id,
     required this.orderCode,
     required this.address,
-    required this.totalAmount,
-    required this.discount,
     required this.finalAmount,
-    this.status = OrderStatus.pending,
-    this.paymentStatus = PaymentStatus.unpaid,
+    required this.status,
   });
-
-  // --- SENIOR TIP: Dùng Map để parse Status cực nhanh và sạch ---
-  static OrderStatus _parseStatus(String? status) {
-    return OrderStatus.values.firstWhere(
-      (e) => e.name == status,
-      orElse: () => OrderStatus.pending,
-    );
-  }
-
-  static PaymentStatus _parsePayment(String? status) {
-    return PaymentStatus.values.firstWhere(
-      (e) => e.name == status,
-      orElse: () => PaymentStatus.unpaid,
-    );
-  }
 
   factory OrderModel.fromJson(Map<String, dynamic> json, [String? docId]) {
     return OrderModel(
-      // Ưu tiên docId truyền vào, nếu không có thì tìm trong json['id'] hoặc json['_id']
-      id: docId ?? json['id'] ?? json['_id'] ?? '',
+      id: docId ?? json['id'] ?? '',
       orderCode: json['orderCode'] ?? 'ECO-000000',
-      // Kiểm tra kỹ tên trường: 'shippingAddress' hay 'address'?
-      address: json['shippingAddress'] ?? json['address'] ?? 'Chưa cung cấp',
-      totalAmount: (json['totalAmount'] ?? 0).toDouble(),
-      discount: (json['discount'] ?? 0).toDouble(),
+      address: json['shippingAddress'] ?? json['address'] ?? '',
       finalAmount: (json['finalAmount'] ?? 0).toDouble(),
-      status: _parseStatus(json['status']),
-      paymentStatus: _parsePayment(json['paymentStatus']),
+      // Senior Tip: Dùng .name để so sánh chuỗi enum trực tiếp với Backend string
+      status: OrderStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => OrderStatus.pending,
+      ),
     );
   }
 }

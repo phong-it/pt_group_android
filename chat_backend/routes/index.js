@@ -7,8 +7,8 @@ const verifyToken = require('../middlewares/authMiddleware');
 // 2. Import Controllers
 const { processCheckout } = require('../controllers/checkoutController');
 const { syncCart } = require('../controllers/cartController');
-const { getOrders } = require('../controllers/orderController');
-
+const { getOrders, getOrderDetail } = require('../controllers/orderController'); // Thêm getOrderDetail
+const shipperController = require('../controllers/shipperController');
 // ==========================================
 // 3. ĐỊNH NGHĨA CÁC ROUTES
 // ==========================================
@@ -22,6 +22,14 @@ router.post('/cart/sync', verifyToken, syncCart);
 // API Lấy danh sách đơn hàng
 router.get('/orders', verifyToken, getOrders); // <-- Gọi hàm getOrders
 
+// API Lấy chi tiết một đơn hàng (Thêm mới)
+router.get('/orders/:id', verifyToken, getOrderDetail);
+
+// API: POST /api/shipper/update-status
+router.post(
+    '/shipper/update-status',
+    shipperController.updateStatusByShipper
+);
 // Các route tương lai:
 // router.post('/vouchers/redeem', verifyToken, redeemVoucherController);
 // router.post('/eco/pickup', verifyToken, completePickupController);

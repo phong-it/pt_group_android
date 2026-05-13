@@ -39,11 +39,17 @@ void main() async {
         ChangeNotifierProvider(create: (_) => UserProvider()),
 
         // --- PHẦN CHAT: Sắp xếp theo thứ tự phụ thuộc ---
-        //helo
         // 1. Tạo "Gốc": SocketService
-        Provider(create: (_) => SocketService()),
+        Provider(
+          create: (_) {
+            final service = SocketService();
+            service.connect(); // <--- QUAN TRỌNG: Phải gọi ở đây
+            return service;
+          },
+          dispose: (_, service) => service.dispose(), // Dọn dẹp khi app đóng
+        ),
 
-        // 2. Tạo Repository: Lấy SocketService ở trên bỏ vào
+        // 2. Tạo Repository: ProxyProvider sẽ tự động update khi SocketService sẵn sàng
         ProxyProvider<SocketService, ChatRepository>(
           update: (_, socketService, __) => ChatRepository(socketService),
         ),

@@ -9,17 +9,28 @@ const app = express();
 const server = http.createServer(app);
 
 // Cấu hình Express
-app.use(cors());
+app.use(cors({}));
 app.use(express.json()); // Để đọc được body kiểu JSON
 
 // Cấu hình Socket.io
 const io = socketIo(server, { cors: { origin: "*" } });
 
+// LƯU IO VÀO APP (Để sử dụng trong Controller)
+app.set('socketio', io);
 // Kích hoạt Socket.io
 chatSocket(io);
 
+// Socket connection logic
+io.on('connection', (socket) => {
+    console.log('Một thiết bị đã kết nối: ' + socket.id);
+});
 // Kích hoạt REST API Routes
 app.use('/api', apiRoutes);
+
+app.use((req, res, next) => {
+    console.log(`>>> Request tới: ${req.method} ${req.url}`);
+    next();
+});
 
 // Khởi động Server
 const PORT = process.env.PORT || 3001;
