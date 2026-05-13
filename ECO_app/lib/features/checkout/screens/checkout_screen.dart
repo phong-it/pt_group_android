@@ -7,6 +7,8 @@ import '../../../core/constants/app_routes.dart';
 import '../../../core/utils/formatters.dart';
 import 'widgets/checkout_form_section.dart'; // Import file số 2
 import 'widgets/checkout_summary_footer.dart'; // Import file số 3
+import '../../profile/service/profile_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -30,9 +32,32 @@ class _CheckoutScreenState extends State<CheckoutScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+
+    // Gọi hàm nạp dữ liệu tự động
+    _loadUserProfile();
+
     _tabController.addListener(() {
-      setState(() {}); // Cập nhật lại UI (Footer) khi đổi tab
+      setState(() {});
     });
+  }
+
+  Future<void> _loadUserProfile() async {
+    // 1. Lấy UID (Giả sử bạn dùng FirebaseAuth trực tiếp hoặc qua AuthService)
+    final String? uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    // 2. Bật trạng thái loading nếu cần (hoặc để mặc định)
+    final profileService = ProfileService();
+    final userData = await profileService.getUserProfile(uid);
+
+    if (userData != null && mounted) {
+      // 3. Cập nhật Controller
+      setState(() {
+        _nameController.text = userData['name'] ?? '';
+        _phoneController.text = userData['phone'] ?? '';
+        _addressController.text = userData['address'] ?? '';
+      });
+    }
   }
 
   @override

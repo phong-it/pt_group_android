@@ -25,4 +25,19 @@ class ProfileService {
       return 'lỗi khi chỉnh sữa thông tin: $e';
     }
   }
+
+  Future<Map<String, dynamic>?> getUserProfile(String uid) async {
+  try {
+    DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
+    if (doc.exists) {
+      return doc.data() as Map<String, dynamic>;
+    }
+    return null;
+  } catch (e) {
+    print('Lỗi khi lấy thông tin: $e');
+    return null;
+  }
+}
+
+
 }
