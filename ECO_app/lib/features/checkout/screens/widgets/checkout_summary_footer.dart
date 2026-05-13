@@ -41,7 +41,7 @@ class CheckoutSummaryFooter extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Total', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+              const Text('Tổng tiền', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
               Text(
                 '${cart.totalMarketPrice.toStringAsFixed(0)} đ',
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.black),

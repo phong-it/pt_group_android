@@ -18,66 +18,73 @@ class CheckoutFormSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // THẺ THÔNG TIN NHẬN HÀNG
-        Container(
-          margin: const EdgeInsets.all(24),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              )
-            ],
+    // Thẻ cha duy nhất là SingleChildScrollView
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(), // Hiệu ứng cuộn mượt
+      padding: const EdgeInsets.only(bottom: 40), // Đệm đáy tránh lẹm chữ
+      child: Column(
+        children: [
+          // THẺ THÔNG TIN NHẬN HÀNG
+          Container(
+            margin: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                )
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Thông tin vận chuyển',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 16),
+                _buildModernTextField(nameController, 'Họ và tên', Icons.person_outline),
+                const SizedBox(height: 12),
+                _buildModernTextField(phoneController, 'Số điện thoại', Icons.phone_outlined, isPhone: true),
+                const SizedBox(height: 12),
+                _buildModernTextField(addressController, 'Địa chỉ nhận hàng', Icons.location_on_outlined, maxLines: 2),
+              ],
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Shipping Details',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 16),
-              _buildModernTextField(nameController, 'Họ và tên', Icons.person_outline),
-              const SizedBox(height: 12),
-              _buildModernTextField(phoneController, 'Số điện thoại', Icons.phone_outlined, isPhone: true),
-              const SizedBox(height: 12),
-              _buildModernTextField(addressController, 'Địa chỉ nhận hàng', Icons.location_on_outlined, maxLines: 2),
-            ],
-          ),
-        ),
 
-        // TAB BAR PHƯƠNG THỨC THANH TOÁN
-        TabBar(
-          controller: tabController,
-          indicatorColor: Colors.black,
-          indicatorWeight: 2,
-          labelColor: Colors.black,
-          unselectedLabelColor: Colors.grey.shade400,
-          labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
-          tabs: const [
-            Tab(text: 'Thanh toán COD'),
-            Tab(text: 'Chuyển khoản QR'),
-          ],
-        ),
-        
-        // NỘI DUNG TAB (Expanded để lấp đầy khoảng trống còn lại)
-        Expanded(
-          child: TabBarView(
+          // TAB BAR PHƯƠNG THỨC THANH TOÁN
+          TabBar(
             controller: tabController,
-            children: [
-              _buildCODTab(),
-              _buildQRTab(context),
+            indicatorColor: Colors.black,
+            indicatorWeight: 2,
+            labelColor: Colors.black,
+            unselectedLabelColor: Colors.grey.shade400,
+            labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+            unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
+            tabs: const [
+              Tab(text: 'Thanh toán COD'),
+              Tab(text: 'Chuyển khoản QR'),
             ],
           ),
-        ),
-      ],
+          
+          // NỘI DUNG TAB (Dùng AnimatedBuilder, TUYỆT ĐỐI KHÔNG DÙNG EXPANDED Ở ĐÂY)
+          AnimatedBuilder(
+            animation: tabController,
+            builder: (context, child) {
+              return Padding(
+                padding: const EdgeInsets.only(top: 24.0),
+                child: tabController.index == 0 
+                    ? _buildCODTab() 
+                    : _buildQRTab(context),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -103,9 +110,10 @@ class CheckoutFormSection extends StatelessWidget {
   }
 
   Widget _buildCODTab() {
-    return Center(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min, // Giúp Column chỉ chiếm diện tích vừa đủ
         children: [
           Icon(Icons.local_shipping_outlined, size: 48, color: Colors.grey.shade300),
           const SizedBox(height: 12),

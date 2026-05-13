@@ -97,6 +97,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     final backgroundColor = const Color(0xFFF8F9FA);
+    // Kiểm tra bàn phím
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -110,23 +112,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
         ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: CheckoutFormSection(
-              nameController: _nameController,
-              phoneController: _phoneController,
-              addressController: _addressController,
-              tabController: _tabController,
-            ),
-          ),
-          CheckoutSummaryFooter(
-            isLoading: _isLoading,
-            tabIndex: _tabController.index,
-            onConfirm: _onConfirmOrder,
-          ),
-        ],
+      // 1. Chỉ gọi FormSection ở body
+      body: CheckoutFormSection(
+        nameController: _nameController,
+        phoneController: _phoneController,
+        addressController: _addressController,
+        tabController: _tabController,
       ),
+      // 2. Chuyển Footer xuống bottomNavigationBar, tự động biến mất khi bật phím
+      bottomNavigationBar: isKeyboardOpen
+          ? const SizedBox.shrink() 
+          : SafeArea(
+              child: CheckoutSummaryFooter(
+                isLoading: _isLoading,
+                tabIndex: _tabController.index,
+                onConfirm: _onConfirmOrder,
+              ),
+            ),
     );
   }
 }
