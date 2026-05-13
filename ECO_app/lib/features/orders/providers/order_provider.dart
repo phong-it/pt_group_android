@@ -20,14 +20,31 @@ class OrderProvider extends ChangeNotifier {
   final String apiUrl = ApiConfig.baseUrl;
 
   // Senior Tip: Viết hàm cập nhật trạng thái từ Socket
-  void updateStatusFromSocket(String orderId, String newStatus) {
-    if (_currentOrder != null &&
-        (_currentOrder!.id == orderId || _currentOrder!.orderCode == orderId)) {
-      _currentOrder!.status = OrderStatus.values.firstWhere(
-        (e) => e.name == newStatus,
+  void updateStatusFromSocket(String incomingId, String newStatus) {
+    if (_currentOrder == null) return;
+
+    // Senior Tip: So khớp thông minh (Khớp 1 trong 2 là ăn)
+    bool isTargetOrder =
+        (_currentOrder!.id == incomingId) ||
+        (_currentOrder!.orderCode == incomingId);
+
+    if (isTargetOrder) {
+      debugPrint("Senior Log: Đang cập nhật trạng thái mới: $newStatus");
+
+      // Tìm Enum tương ứng
+      final updatedStatus = OrderStatus.values.firstWhere(
+        (e) => e.name == newStatus.trim().toLowerCase(),
         orElse: () => _currentOrder!.status,
       );
-      notifyListeners(); // UI tự động cập nhật mà không cần load lại trang
+
+      // Cập nhật và Notify
+      _currentOrder!.status = updatedStatus;
+
+      // Đồng bộ ngược lại vào danh sách list (nếu có)
+      int index = _orders.indexWhere((o) => o.id == _currentOrder!.id);
+      if (index != -1) _orders[index].status = updatedStatus;
+
+      notifyListeners(); // Đây là lệnh kích hoạt UI rebuild
     }
   }
 

@@ -33,18 +33,24 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     }
   }
 
+  // order_details_screen.dart
+
   void _initSocketListener() {
     final socketService = context.read<SocketService>();
     final orderProvider = context.read<OrderProvider>();
 
-    // Đảm bảo không đăng ký chồng chéo listener
     socketService.socket.off('order_status_changed');
     socketService.socket.on('order_status_changed', (data) {
-      if (data['orderId'].toString() == _orderId) {
-        orderProvider.updateStatusFromSocket(_orderId, data['status']);
-        if (mounted) {
-          _showStatusUpdateSnackBar(data['status']);
-        }
+      final String incomingOrderId = data['orderId'].toString();
+      final String newStatus = data['status'].toString();
+
+      // Gọi provider cập nhật
+      orderProvider.updateStatusFromSocket(incomingOrderId, newStatus);
+
+      // SnackBar nên lấy label từ Enum sau khi đã parse để test logic
+      if (mounted) {
+        final label = _getStatusLabel(orderProvider.currentOrder!.status);
+        _showStatusUpdateSnackBar(label);
       }
     });
   }
@@ -178,11 +184,26 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   Widget _buildTimelineCard(OrderStatus status) {
     final steps = ["Chờ", "Xác nhận", "Giao", "Đã nhận"];
     int currentStep = 0;
-    if (status == OrderStatus.confirmed) currentStep = 1;
-    if (status == OrderStatus.shipping || status == OrderStatus.picked_up)
-      currentStep = 2;
-    if (status == OrderStatus.delivered) currentStep = 3;
-    if (status == OrderStatus.cancelled) currentStep = -1;
+
+    // Senior Tip: Sử dụng Switch case hoặc Map để quản lý step cho sạch
+    switch (status) {
+      case OrderStatus.pending:
+        currentStep = 0;
+        break;
+      case OrderStatus.confirmed:
+        currentStep = 1;
+        break;
+      case OrderStatus.picked_up: // Shipper lấy hàng là bắt đầu Giao
+      case OrderStatus.shipping:
+        currentStep = 2;
+        break;
+      case OrderStatus.delivered:
+        currentStep = 3;
+        break;
+      case OrderStatus.cancelled:
+        currentStep = -1;
+        break;
+    }
 
     return Card(
       elevation: 0,

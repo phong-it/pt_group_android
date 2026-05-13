@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Shipper Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+    <nav class="navbar navbar-dark bg-dark mb-4">
+        <div class="container">
+            <span class="navbar-brand">SHIPPER SIMULATOR</span>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Điều khiển trạng thái đơn hàng</h5>
+                <p class="text-muted small">Nhập ID đơn hàng từ hệ thống để bắt đầu giả lập</p>
+
+                <div class="input-group mb-3">
+                    <span class="input-group-text">ID đơn:</span>
+                    <input type="text" id="orderId" class="form-control" placeholder="Ví dụ: 101">
+                </div>
+
+                <div class="row g-2">
+                    <div class="col-6">
+                        <button onclick="changeStatus('picked_up')" class="btn btn-info w-100 text-white">Lấy
+                            hàng</button>
+                    </div>
+                    <div class="col-6">
+                        <button onclick="changeStatus('shipping')" class="btn btn-warning w-100">Đang giao</button>
+                    </div>
+                    <div class="col-6">
+                        <button onclick="changeStatus('delivered')" class="btn btn-success w-100">Đã giao xong</button>
+                    </div>
+                    <div class="col-6">
+                        <button onclick="changeStatus('cancelled')" class="btn btn-danger w-100">Hủy đơn</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { ShipperService } from './js/api.js';
+
+        window.changeStatus = async (status) => {
+            const id = document.getElementById('orderId').value.trim();
+            if (!id) return alert("Vui lòng nhập ID đơn hàng!");
+
+            const result = await ShipperService.updateStatus(id, status);
+            if (result.success) {
+
+                alert(`Đã cập nhật đơn #${id} thành: ${status}`);
+
+            } else {
+
+                alert(`
+Cập nhật thất bại!
+
+Status Code: ${result.statusCode}
+
+Lý do:
+${result.message}
+    `);
+
+                console.error("Chi tiết lỗi:", result);
+            }
+        };
+    </script>
+</body>
+
+</html>
