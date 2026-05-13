@@ -24,27 +24,50 @@ exports.updateStatusByShipper = async (req, res) => {
         }
 
         // 2. Truy vấn tìm Document có field 'orderCode' khớp với mã gửi lên
-        // Senior Tip: Luôn dùng .limit(1) khi biết dữ liệu là duy nhất để tối ưu tốc độ truy vấn
         const ordersRef = db.collection("orders");
         const querySnapshot = await ordersRef.where("orderCode", "==", orderId).limit(1).get();
 
-        // 3. Kiểm tra xem đơn hàng có tồn tại không
         if (querySnapshot.empty) {
-            return res.status(404).json({
+            return res.status(404).json({ success: false, message: "Không tìm thấy đơn hàng" });
+        }
+
+        const orderDoc = querySnapshot.docs[0];
+        const currentData = orderDoc.data();
+        const currentStatus = currentData.status;
+
+        // 🚩 LOGIC CHIẾN LƯỢC: Ngăn chặn cập nhật đơn đã kết thúc
+        if (currentStatus === "cancelled") {
+            return res.status(400).json({
                 success: false,
-                message: `Không tìm thấy đơn hàng có mã: ${orderId}`,
+                message: "Không thể cập nhật đơn hàng đã bị hủy!"
+            });
+        }
+        if (currentStatus === "delivered") {
+            return res.status(400).json({
+                success: false,
+                message: "Đơn hàng đã giao thành công, không thể thay đổi trạng thái."
             });
         }
 
-        // 4. Lấy Document Reference từ kết quả truy vấn
-        const orderDoc = querySnapshot.docs[0];
-        const docRef = orderDoc.ref;
-        const currentTime = new Date().toISOString();
+        // Senior Tip: Kiểm tra luồng logic (State Machine)
+        // Ví dụ: Không thể nhảy từ "confirmed" lên "delivered" mà bỏ qua "shipping"
+        const workflow = {
+            'confirmed': ['picked_up', 'cancelled'],
+            'picked_up': ['shipping', 'cancelled'],
+            'shipping': ['delivered', 'cancelled'],
+        };
 
-        // 5. Cập nhật dữ liệu
-        await docRef.update({
+        if (workflow[currentStatus] && !workflow[currentStatus].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: `Quy trình không hợp lệ. Không thể chuyển từ ${currentStatus} sang ${status}`
+            });
+        }
+
+        // Cập nhật Database
+        await orderDoc.ref.update({
             status: status,
-            updated_at: currentTime,
+            updated_at: new Date().toISOString(),
             updated_by_role: "shipper"
         });
 
@@ -54,7 +77,7 @@ exports.updateStatusByShipper = async (req, res) => {
             io.emit("order_status_changed", {
                 orderId: orderId, // Trả về mã ECO để Frontend dễ nhận diện
                 status: status,
-                updateAt: currentTime,
+                updateAt: new Date().toISOString(),
             });
             console.log(`>>> [Socket] Đã phát tin hiệu đổi trạng thái cho đơn: ${orderId}`);
         }
@@ -76,5 +99,32 @@ exports.updateStatusByShipper = async (req, res) => {
             message: "Lỗi hệ thống khi cập nhật đơn hàng",
             error: error.message,
         });
+    }
+};
+
+exports.getOrderByCode = async (req, res) => {
+    try {
+        const { orderCode } = req.params;
+        const ordersRef = db.collection("orders");
+        const querySnapshot = await ordersRef.where("orderCode", "==", orderCode.trim()).limit(1).get();
+
+        if (querySnapshot.empty) {
+            return res.status(404).json({ success: false, message: "Không tìm thấy đơn hàng" });
+        }
+
+        const orderData = querySnapshot.docs[0].data();
+
+        // ĐẢM BẢO trả về đúng cấu trúc này
+        return res.status(200).json({
+            success: true,
+            data: {
+                orderCode: orderData.orderCode,
+                status: orderData.status, // Đây là giá trị quan trọng nhất
+                customerName: orderData.customerName || "Khách lẻ",
+                totalAmount: orderData.totalAmount || 0
+            }
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: "Lỗi Server", error: error.message });
     }
 };

@@ -3,41 +3,81 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Shipper Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Senior Shipper Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .status-badge {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+        }
+
+        .btn-action {
+            transition: all 0.2s;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .loading-spinner {
+            display: none;
+        }
+    </style>
 </head>
 
 <body class="bg-light">
-    <nav class="navbar navbar-dark bg-dark mb-4">
+    <nav class="navbar navbar-dark bg-primary shadow-sm mb-4">
         <div class="container">
-            <span class="navbar-brand">SHIPPER SIMULATOR</span>
+            <span class="navbar-brand fw-bold">🚀 SHIPPER PRO SYSTEM</span>
         </div>
     </nav>
 
     <div class="container">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <h5 class="card-title">Điều khiển trạng thái đơn hàng</h5>
-                <p class="text-muted small">Nhập ID đơn hàng từ hệ thống để bắt đầu giả lập</p>
-
-                <div class="input-group mb-3">
-                    <span class="input-group-text">ID đơn:</span>
-                    <input type="text" id="orderId" class="form-control" placeholder="Ví dụ: 101">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h6 class="text-uppercase text-muted fw-bold small mb-3">Tra cứu vận đơn</h6>
+                        <div class="input-group">
+                            <input type="text" id="orderId" class="form-control form-control-lg"
+                                placeholder="Nhập mã đơn hàng...">
+                            <button onclick="loadOrder()" class="btn btn-primary px-4" id="btnSearch">
+                                🔍 Kiểm tra
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="row g-2">
-                    <div class="col-6">
-                        <button onclick="changeStatus('picked_up')" class="btn btn-info w-100 text-white">Lấy
-                            hàng</button>
-                    </div>
-                    <div class="col-6">
-                        <button onclick="changeStatus('shipping')" class="btn btn-warning w-100">Đang giao</button>
-                    </div>
-                    <div class="col-6">
-                        <button onclick="changeStatus('delivered')" class="btn btn-success w-100">Đã giao xong</button>
-                    </div>
-                    <div class="col-6">
-                        <button onclick="changeStatus('cancelled')" class="btn btn-danger w-100">Hủy đơn</button>
+                <div id="actionPanel" class="card border-0 shadow-sm d-none">
+                    <div class="card-body text-center">
+                        <div class="mb-4">
+                            <p class="text-muted mb-1">Trạng thái hiện tại đơn #<span id="displayId"></span></p>
+                            <span id="currentStatusBadge" class="status-badge bg-secondary text-white">Chưa xác
+                                định</span>
+                        </div>
+
+                        <div id="statusErrorMessage" class="alert alert-danger d-none">
+                            ⚠️ Đơn hàng đã bị hủy hoặc hoàn tất. Không thể thay đổi.
+                        </div>
+
+                        <div class="row g-3" id="controlsContainer">
+                            <div class="col-6">
+                                <button data-status="picked_up" onclick="handleUpdate('picked_up')"
+                                    class="btn btn-outline-info btn-action w-100 py-3">Lấy hàng</button>
+                            </div>
+                            <div class="col-6">
+                                <button data-status="shipping" onclick="handleUpdate('shipping')"
+                                    class="btn btn-outline-warning btn-action w-100 py-3">Đang giao</button>
+                            </div>
+                            <div class="col-6">
+                                <button data-status="delivered" onclick="handleUpdate('delivered')"
+                                    class="btn btn-outline-success btn-action w-100 py-3">Đã giao</button>
+                            </div>
+                            <div class="col-6">
+                                <button data-status="cancelled" onclick="handleUpdate('cancelled')"
+                                    class="btn btn-outline-danger btn-action w-100 py-3">Hủy đơn</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -47,30 +87,116 @@
     <script type="module">
         import { ShipperService } from './js/api.js';
 
-        window.changeStatus = async (status) => {
-            const id = document.getElementById('orderId').value.trim();
-            if (!id) return alert("Vui lòng nhập ID đơn hàng!");
+        // Cấu hình máy trạng thái (State Machine)
+        // Key: Trạng thái hiện tại | Value: Các trạng thái kế tiếp được phép
+        const VALID_TRANSITIONS = {
+            'pending': ['picked_up', 'cancelled'],
+            'picked_up': ['shipping', 'cancelled'],
+            'shipping': ['delivered', 'cancelled'],
+            'delivered': [], // Trạng thái cuối
+            'cancelled': []  // Trạng thái cuối
+        };
 
-            const result = await ShipperService.updateStatus(id, status);
-            if (result.success) {
+        const STATUS_MAP = {
+            'pending': { label: 'Chờ lấy hàng', color: 'bg-secondary' },
+            'picked_up': { label: 'Đã lấy hàng', color: 'bg-info' },
+            'shipping': { label: 'Đang vận chuyển', color: 'bg-warning' },
+            'delivered': { label: 'Giao thành công', color: 'bg-success' },
+            'cancelled': { label: 'Đã hủy đơn', color: 'bg-danger' }
+        };
 
-                alert(`Đã cập nhật đơn #${id} thành: ${status}`);
+        // Hàm load thông tin đơn hàng để kiểm tra trạng thái trước
+        window.loadOrder = async () => {
+            const code = document.getElementById('orderId').value.trim();
+            if (!code) return alert("Vui lòng nhập mã đơn hàng!");
 
+            const btnSearch = document.getElementById('btnSearch');
+            btnSearch.disabled = true;
+            btnSearch.innerText = "⏳ Đang kiểm tra...";
+
+            // Gọi API
+            const result = await ShipperService.getOrderByCode(code);
+
+            btnSearch.disabled = false;
+            btnSearch.innerText = "🔍 Kiểm tra";
+
+            // result.data chính là cục JSON gốc từ Server trả về
+            const serverResponse = result.data;
+
+            // Kiểm tra API call thành công và server có trả về cục data bên trong
+            if (result.success && serverResponse && serverResponse.data) {
+
+                // Trỏ đúng vào lớp bọc thứ 2 chứa thông tin đơn hàng
+                const orderInfo = serverResponse.data;
+
+                if (orderInfo.status) {
+                    renderUI(code, orderInfo.status);
+                } else {
+                    alert("Lỗi: Không nhận được trạng thái đơn hàng từ hệ thống.");
+                    console.error("API trả về thiếu field status:", serverResponse);
+                }
             } else {
+                alert(result.message || "Không tìm thấy đơn hàng.");
+            }
+        };
 
-                alert(`
-Cập nhật thất bại!
+        // Hàm cập nhật UI dựa trên trạng thái
+        function renderUI(id, currentStatus) {
 
-Status Code: ${result.statusCode}
+            console.log("Debug Status:", currentStatus); // Senior luôn log để kiểm tra data thực tế
 
-Lý do:
-${result.message}
-    `);
+            if (!currentStatus) {
+                alert("Lỗi: Không nhận được trạng thái đơn hàng từ hệ thống.");
+                return;
+            }
+            const panel = document.getElementById('actionPanel');
+            const badge = document.getElementById('currentStatusBadge');
+            const errorMsg = document.getElementById('statusErrorMessage');
+            const controls = document.getElementById('controlsContainer');
 
-                console.error("Chi tiết lỗi:", result);
+            panel.classList.remove('d-none');
+            document.getElementById('displayId').innerText = id;
+
+            // Cập nhật Badge
+            const info = STATUS_MAP[currentStatus] || { label: currentStatus, color: 'bg-dark' };
+            badge.innerText = info.label;
+            badge.className = `status-badge text-white ${info.color}`;
+
+            // Kiểm tra logic luồng
+            const nextPossibleStates = VALID_TRANSITIONS[currentStatus] || [];
+
+            if (nextPossibleStates.length === 0) {
+                errorMsg.classList.remove('d-none');
+                controls.classList.add('d-none'); // Ẩn nút nếu là trạng thái cuối (Hủy/Giao xong)
+            } else {
+                errorMsg.classList.add('d-none');
+                controls.classList.remove('d-none');
+
+                // Disable các nút không nằm trong luồng cho phép
+                document.querySelectorAll('.btn-action').forEach(btn => {
+                    const targetStatus = btn.getAttribute('data-status');
+                    btn.disabled = !nextPossibleStates.includes(targetStatus);
+                });
+            }
+        }
+
+        // Xử lý cập nhật
+        window.handleUpdate = async (newStatus) => {
+            const id = document.getElementById('displayId').innerText;
+
+            if (!confirm(`Xác nhận chuyển trạng thái sang: ${STATUS_MAP[newStatus].label}?`)) return;
+
+            const result = await ShipperService.updateStatus(id, newStatus);
+
+            if (result.success) {
+                alert("Cập nhật thành công!");
+                renderUI(id, newStatus); // Cập nhật lại UI ngay lập tức
+            } else {
+                alert(`Lỗi: ${result.message}`);
             }
         };
     </script>
+
 </body>
 
 </html>

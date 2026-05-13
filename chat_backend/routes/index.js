@@ -25,11 +25,18 @@ router.get('/orders', verifyToken, getOrders); // <-- Gọi hàm getOrders
 // API Lấy chi tiết một đơn hàng (Thêm mới)
 router.get('/orders/:id', verifyToken, getOrderDetail);
 
+
+
 // API: POST /api/shipper/update-status
 router.post(
     '/shipper/update-status',
     shipperController.updateStatusByShipper
 );
+
+// Route dành cho shipper tra cứu đơn hàng bằng mã ECO-xxxx
+router.get('/shipper/order/:orderCode', shipperController.getOrderByCode);
+
+
 // Các route tương lai:
 // router.post('/vouchers/redeem', verifyToken, redeemVoucherController);
 // router.post('/eco/pickup', verifyToken, completePickupController);
