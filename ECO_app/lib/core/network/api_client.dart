@@ -9,12 +9,9 @@ class ApiClient {
     if (kIsWeb) {
       // Đang chạy trên Chrome / Web
       return 'http://127.0.0.1:3001/api';
-    } else if (defaultTargetPlatform == TargetPlatform.android) {
-      // Đang chạy trên máy ảo Android (Emulator)
-      return 'http://10.0.2.2:3001/api';
     } else {
       // Đang chạy trên iOS Simulator hoặc thiết bị thật (cần điền IP thật ở đây)
-      return 'http://192.168.1.X:3001/api';
+      return 'http://192.168.1.215:3001/api';
     }
   }
 
