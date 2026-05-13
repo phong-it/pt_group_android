@@ -2,122 +2,188 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../cart/providers/cart_provider.dart';
 
-class CheckoutSummaryFooter extends StatelessWidget {
-  final bool isLoading;
-  final int tabIndex;
-  final VoidCallback onConfirm;
+class CheckoutFormSection extends StatelessWidget {
+  final TextEditingController nameController;
+  final TextEditingController phoneController;
+  final TextEditingController addressController;
+  final TabController tabController;
 
-  const CheckoutSummaryFooter({
+  const CheckoutFormSection({
     super.key,
-    required this.isLoading,
-    required this.tabIndex,
-    required this.onConfirm,
+    required this.nameController,
+    required this.phoneController,
+    required this.addressController,
+    required this.tabController,
   });
 
   @override
   Widget build(BuildContext context) {
-    final cart = context.watch<CartProvider>();
-    final isCOD = tabIndex == 0;
+    return Column(
+      children: [
+        // THẺ THÔNG TIN NHẬN HÀNG
+        Container(
+          margin: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Shipping Details',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 16),
+              _buildModernTextField(
+                nameController,
+                'Họ và tên',
+                Icons.person_outline,
+              ),
+              const SizedBox(height: 12),
+              _buildModernTextField(
+                phoneController,
+                'Số điện thoại',
+                Icons.phone_outlined,
+                isPhone: true,
+              ),
+              const SizedBox(height: 12),
+              _buildModernTextField(
+                addressController,
+                'Địa chỉ nhận hàng',
+                Icons.location_on_outlined,
+                maxLines: 2,
+              ),
+            ],
+          ),
+        ),
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-      decoration: const BoxDecoration(
-        color: Color(0xFFF8F9FA),
+        // TAB BAR PHƯƠNG THỨC THANH TOÁN
+        TabBar(
+          controller: tabController,
+          indicatorColor: Colors.black,
+          indicatorWeight: 2,
+          labelColor: Colors.black,
+          unselectedLabelColor: Colors.grey.shade400,
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+          ),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
+          tabs: const [
+            Tab(text: 'Thanh toán COD'),
+            Tab(text: 'Chuyển khoản QR'),
+          ],
+        ),
+
+        // NỘI DUNG TAB (Expanded để lấp đầy khoảng trống còn lại)
+        Expanded(
+          child: TabBarView(
+            controller: tabController,
+            children: [_buildCODTab(), _buildQRTab(context)],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModernTextField(
+    TextEditingController controller,
+    String hint,
+    IconData icon, {
+    bool isPhone = false,
+    int maxLines = 1,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: isPhone ? TextInputType.phone : TextInputType.text,
+      maxLines: maxLines,
+      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: Colors.grey.shade400),
+        prefixIcon: Icon(icon, size: 20, color: Colors.grey.shade600),
+        filled: true,
+        fillColor: const Color(0xFFF0F2F5), // Màu nền xám siêu nhạt
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
       ),
+    );
+  }
+
+  Widget _buildCODTab() {
+    return Center(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Subtotal', style: TextStyle(color: Colors.grey.shade600, fontSize: 14, fontWeight: FontWeight.w500)),
-              Text('${cart.totalMarketPrice.toStringAsFixed(0)} đ', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-            ],
+          Icon(
+            Icons.local_shipping_outlined,
+            size: 48,
+            color: Colors.grey.shade300,
           ),
-          const SizedBox(height: 16),
-          const MyDottedSeparator(), // Tái sử dụng nét đứt
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Tổng tiền', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-              Text(
-                '${cart.totalMarketPrice.toStringAsFixed(0)} đ',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.black),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          
-          // Nút CTA
-          SizedBox(
-            width: double.infinity,
-            height: 58,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-              onPressed: isLoading ? null : onConfirm,
-              child: isLoading
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : Text(
-                      isCOD ? 'Xác nhận đặt hàng (COD)' : 'Tôi đã chuyển khoản',
-                      style: const TextStyle(
-                        fontSize: 16, 
-                        fontWeight: FontWeight.w600, 
-                        color: Colors.white
-                      ),
-                    ),
+          const SizedBox(height: 12),
+          Text(
+            'Thanh toán bằng tiền mặt\nkhi nhận hàng',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey.shade500,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
       ),
     );
   }
-}
 
-// Widget nét đứt (Nếu bạn đã có ở file cart_summary_footer.dart thì có thể xóa ở đây và import sang nhé)
-class MyDottedSeparator extends StatelessWidget {
-  final double height;
-  final Color color;
-
-  const MyDottedSeparator({super.key, this.height = 1, this.color = Colors.black12});
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final boxWidth = constraints.constrainWidth();
-        const dashWidth = 5.0;
-        final dashHeight = height;
-        final dashCount = (boxWidth / (2 * dashWidth)).floor();
-        return Flex(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          direction: Axis.horizontal,
-          children: List.generate(dashCount, (_) {
-            return SizedBox(
-              width: dashWidth,
-              height: dashHeight,
-              child: DecoratedBox(
-                decoration: BoxDecoration(color: color),
-              ),
-            );
-          }),
-        );
-      },
+  Widget _buildQRTab(BuildContext context) {
+    final cart = context.watch<CartProvider>();
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        children: [
+          Text(
+            'Quét mã QR bên dưới để thanh toán',
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Image.network(
+              'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=CheckOut_Total_${cart.totalMarketPrice}',
+              height: 180,
+              width: 180,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

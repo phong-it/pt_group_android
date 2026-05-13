@@ -4,7 +4,7 @@ import '../../cart/providers/cart_provider.dart';
 import '../../notifications/providers/notification_provider.dart';
 import '../services/checkout_service.dart';
 import '../../../core/constants/app_routes.dart';
-
+import '../../../core/utils/formatters.dart';
 import 'widgets/checkout_form_section.dart'; // Import file số 2
 import 'widgets/checkout_summary_footer.dart'; // Import file số 3
 
@@ -15,7 +15,8 @@ class CheckoutScreen extends StatefulWidget {
   State<CheckoutScreen> createState() => _CheckoutScreenState();
 }
 
-class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProviderStateMixin {
+class _CheckoutScreenState extends State<CheckoutScreen>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
@@ -44,11 +45,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   }
 
   // Logic xử lý API (Giữ nguyên như code của bạn)
-  Future<void> _handlePaymentSuccess(BuildContext context, String paymentMethod) async {
-    setState(() { _isLoading = true; });
+  Future<void> _handlePaymentSuccess(
+    BuildContext context,
+    String paymentMethod,
+  ) async {
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
-      String fullAddress = "${_nameController.text} - ${_phoneController.text} - ${_addressController.text} (PT: $paymentMethod)";
+      String fullAddress =
+          "${_nameController.text} - ${_phoneController.text} - ${_addressController.text} (PT: $paymentMethod)";
 
       final result = await _checkoutService.placeOrder(
         voucherId: _selectedVoucherId,
@@ -62,7 +69,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
       cartProvider.clearMarketOnly();
       // notifProvider.addNotification(...);
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đặt hàng thành công!')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Đặt hàng thành công!')));
 
       Navigator.pushReplacementNamed(
         context,
@@ -76,7 +85,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
       );
     } finally {
       if (mounted) {
-        setState(() { _isLoading = false; });
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -86,7 +97,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
         _addressController.text.isEmpty ||
         _phoneController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập đầy đủ thông tin nhận hàng')),
+        const SnackBar(
+          content: Text('Vui lòng nhập đầy đủ thông tin nhận hàng'),
+        ),
       );
       return;
     }
@@ -97,8 +110,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     final backgroundColor = const Color(0xFFF8F9FA);
-    // Kiểm tra bàn phím
-    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -112,23 +123,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
         ),
       ),
-      // 1. Chỉ gọi FormSection ở body
-      body: CheckoutFormSection(
-        nameController: _nameController,
-        phoneController: _phoneController,
-        addressController: _addressController,
-        tabController: _tabController,
-      ),
-      // 2. Chuyển Footer xuống bottomNavigationBar, tự động biến mất khi bật phím
-      bottomNavigationBar: isKeyboardOpen
-          ? const SizedBox.shrink() 
-          : SafeArea(
-              child: CheckoutSummaryFooter(
-                isLoading: _isLoading,
-                tabIndex: _tabController.index,
-                onConfirm: _onConfirmOrder,
-              ),
+      body: Column(
+        children: [
+          Expanded(
+            child: CheckoutFormSection(
+              nameController: _nameController,
+              phoneController: _phoneController,
+              addressController: _addressController,
+              tabController: _tabController,
             ),
+          ),
+          CheckoutSummaryFooter(
+            isLoading: _isLoading,
+            tabIndex: _tabController.index,
+            onConfirm: _onConfirmOrder,
+          ),
+        ],
+      ),
     );
   }
 }
