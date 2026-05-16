@@ -1,22 +1,28 @@
+import 'dart:async'; // BẮT BUỘC: Để sử dụng StreamSubscription
 import 'dart:convert';
-import 'dart:developer' as developer; // Sử dụng developer.log thay cho print
-
+import 'dart:developer' as developer;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/chat_message_model.dart';
 import '../services/socket_service.dart';
 
 class ChatRepository {
   final SocketService _socketService;
 
-  // Constructor Injection: Rất tốt để viết Unit Test sau này
+  // SENIOR DESIGN: Dùng StreamSubscription để quản lý vòng đời lắng nghe dữ liệu
+  StreamSubscription<Map<String, dynamic>>? _messageSubscription;
+
   ChatRepository(this._socketService);
 
   void connect() {
     try {
       _socketService.connect();
-      developer.log('Đang kết nối socket...', name: 'ChatRepository');
+      developer.log(
+        'Đang gọi lệnh kết nối từ Service...',
+        name: 'ChatRepository',
+      );
     } catch (e, stack) {
       developer.log(
-        'Lỗi khi kết nối socket',
+        'Lỗi kết nối',
         error: e,
         stackTrace: stack,
         name: 'ChatRepository',
@@ -25,75 +31,110 @@ class ChatRepository {
   }
 
   void joinRoom(String roomId) {
-    if (roomId.isEmpty) {
-      developer.log('Room ID rỗng, từ chối join', name: 'ChatRepository');
-      return;
-    }
+    if (roomId.isEmpty) return;
     _socketService.joinRoom(roomId);
-    developer.log('Đã gửi yêu cầu join room: $roomId', name: 'ChatRepository');
   }
 
-  void sendMessage(ChatMessageModel message) {
+  // SENIOR REFACTOR: Hàm sendMessage nhận thêm một callback trả về kết quả thành bại dạng bool
+  void sendMessage(
+    ChatMessageModel message, {
+    required Function(bool isSuccess) onResult,
+  }) {
     try {
-      _socketService.sendMessage(message.toJson());
+      _socketService.sendMessage(
+        message.toJson(),
+        onAck: (response) {
+          // Thỏa thuận cấu trúc payload với Backend Dev. Giả định chuẩn hóa: { "status": "success" }
+          if (response is Map &&
+              (response['status'] == 'success' || response['status'] == 'ok')) {
+            onResult(true); // Gửi và lưu thành công
+          } else {
+            developer.log(
+              'Server từ chối tin nhắn hoặc bị Timeout: $response',
+              name: 'ChatRepository',
+            );
+            onResult(false); // Gửi thất bại
+          }
+        },
+      );
     } catch (e, stack) {
       developer.log(
-        'Lỗi khi gửi tin nhắn',
+        'Lỗi phát sinh tại Repo khi gửi tin nhắn',
         error: e,
         stackTrace: stack,
         name: 'ChatRepository',
       );
-      // Ở đây có thể throw một CustomException để UI biết mà hiện Toast báo lỗi cho user
+      onResult(false);
     }
   }
 
+  // SENIOR REFACTOR: Chuyển hoàn toàn sang lắng nghe bằng cơ chế Stream reactive
   void listenForMessages(Function(ChatMessageModel) onNewMessage) {
-    // 1. CHỐNG DUPLICATE EVENT & MEMORY LEAK:
-    // Hủy lắng nghe event cũ trước khi đăng ký mới.
-    // Tránh tình trạng UI rebuild gọi hàm này nhiều lần làm user nhận 1 tin nhắn thành 2, 3 tin.
-    _socketService.socket.off('receive_message');
+    // CHỐT CHẶN AN TOÀN: Hủy Subscription cũ trước khi đăng ký mới (Chống duplicate UI/Memory leak)
+    _messageSubscription?.cancel();
 
-    _socketService.socket.on('receive_message', (data) {
+    // Lắng nghe dữ liệu đổ về từ Stream sạch của SocketService
+    _messageSubscription = _socketService.onMessage.listen((jsonMap) {
       try {
-        // 2. KHẮC PHỤC LỖI TYPE ERROR KINH ĐIỂN:
-        if (data == null) {
-          developer.log('Nhận payload null từ socket', name: 'ChatRepository');
-          return;
-        }
-
-        Map<String, dynamic> jsonMap;
-
-        if (data is String) {
-          // Nếu server gửi Stringified JSON
-          jsonMap = jsonDecode(data) as Map<String, dynamic>;
-        } else if (data is Map) {
-          // Nếu server gửi JSON Object chuẩn
-          jsonMap = Map<String, dynamic>.from(data);
-        } else {
-          throw FormatException(
-            'Kiểu dữ liệu socket không hợp lệ: ${data.runtimeType}',
-          );
-        }
-
+        // Dữ liệu qua Stream đã được ép kiểu Map<String, dynamic> ở Service
         final message = ChatMessageModel.fromJson(jsonMap);
         onNewMessage(message);
       } catch (e, stackTrace) {
-        // 3. BẮT LỖI TẠI CHỖ: Không để crash app nếu 1 tin nhắn bị lỗi format
         developer.log(
-          'Lỗi parse tin nhắn',
+          'Lỗi parse tin nhắn từ Stream',
           error: e,
           stackTrace: stackTrace,
           name: 'ChatRepository',
         );
       }
     });
+
+    developer.log(
+      'Đã đăng ký lắng nghe Stream tin nhắn mới',
+      name: 'ChatRepository',
+    );
   }
 
-  // Đổi tên thành dispose() cho chuẩn convention của Flutter
+  // SENIOR ADD: Hàm lấy lịch sử tin nhắn từ Remote DB
+  // Thiết kế hàm trả về Future<List<...>> giúp Provider dễ dàng async/await
+  Future<List<ChatMessageModel>> getChatHistory(
+    String roomId, {
+    int limit = 50,
+  }) async {
+    try {
+      developer.log(
+        'Đang tải lịch sử từ Firestore cho room: $roomId',
+        name: 'ChatRepository',
+      );
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('chat_messages')
+          .where('roomId', isEqualTo: roomId)
+          .orderBy('sentAt', descending: true)
+          .limit(limit)
+          .get();
+
+      // Parse dữ liệu thô từ DB sang List Model của Dart
+      final List<ChatMessageModel> historyMessages = snapshot.docs.map((doc) {
+        return ChatMessageModel.fromJson({...doc.data(), 'id': doc.id});
+      }).toList();
+
+      return historyMessages;
+    } catch (e, stackTrace) {
+      developer.log(
+        'Lỗi rò rỉ tại Firestore khi lấy history',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'ChatRepository',
+      );
+      // Rethrow để tầng Provider có thể bắt được lỗi và hiển thị lên UI nếu cần
+      rethrow;
+    }
+  }
+
   void dispose() {
-    // Luôn off các event đã đăng ký trước khi disconnect để dọn sạch bộ nhớ
-    _socketService.socket.off('receive_message');
-    _socketService.socket.disconnect();
+    _messageSubscription?.cancel();
+    _socketService.disconnect();
     developer.log(
       'Đã dọn dẹp và ngắt kết nối ChatRepository',
       name: 'ChatRepository',

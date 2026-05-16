@@ -2,12 +2,14 @@ class NotificationModel {
   final String id;
   final String title;
   final String body;
-   final String type;
+  final String type;
   final String? orderId; // Thêm cái này để "gắn link" tới đơn hàng
   final bool isRead;
   final DateTime createdAt;
+  final String? roomId;
 
   NotificationModel({
+    this.roomId,
     required this.id,
     required this.title,
     required this.body,

@@ -54,10 +54,18 @@ void main() async {
           update: (_, socketService, __) => ChatRepository(socketService),
         ),
 
-        // 3. Tạo Provider: Lấy ChatRepository ở trên bỏ vào
-        ChangeNotifierProxyProvider<ChatRepository, ChatProvider>(
-          create: (context) => ChatProvider(context.read<ChatRepository>()),
-          update: (context, repo, previous) => previous ?? ChatProvider(repo),
+        // 3. Tạo ChatProvider: Phụ thuộc vào cả Repo và NotificationProvider
+        ChangeNotifierProxyProvider2<
+          ChatRepository,
+          NotificationProvider,
+          ChatProvider
+        >(
+          create: (context) => ChatProvider(
+            context.read<ChatRepository>(),
+            context.read<NotificationProvider>(),
+          ),
+          update: (context, repo, notif, previous) =>
+              previous ?? ChatProvider(repo, notif),
         ),
       ],
       child: const MyApp(),

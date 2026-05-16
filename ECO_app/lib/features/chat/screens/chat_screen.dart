@@ -75,50 +75,104 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // THÊM LẠI: Widget hiển thị từng bong bóng tin nhắn (Sửa lỗi 1)
   Widget _buildMessageBubble(ChatMessageModel message, bool isMe) {
+    // SENIOR DESIGN: Xác định độ mờ dựa trên trạng thái gửi
+    final bool isSending = message.status == MessageStatus.sending;
+
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Column(
-        crossAxisAlignment: isMe
-            ? CrossAxisAlignment.end
-            : CrossAxisAlignment.start,
-        children: [
-          Container(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.7,
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            margin: const EdgeInsets.symmetric(vertical: 4),
-            decoration: BoxDecoration(
-              color: isMe ? Colors.blue[600] : Colors.white,
-              borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(12),
-                topRight: const Radius.circular(12),
-                bottomLeft: Radius.circular(isMe ? 12 : 0),
-                bottomRight: Radius.circular(isMe ? 0 : 12),
+      child: Opacity(
+        // Nếu đang gửi thì làm mờ đi một chút tạo hiệu ứng thị giác chuẩn Zalo
+        opacity: isSending ? 0.7 : 1.0,
+        child: Column(
+          crossAxisAlignment: isMe
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
+          children: [
+            Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.7,
               ),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 2,
-                  offset: Offset(0, 1),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              decoration: BoxDecoration(
+                color: isMe ? Colors.blue[600] : Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(12),
+                  topRight: const Radius.circular(12),
+                  bottomLeft: Radius.circular(isMe ? 12 : 0),
+                  bottomRight: Radius.circular(isMe ? 0 : 12),
                 ),
-              ],
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 2,
+                    offset: Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Text(
+                message.content,
+                style: TextStyle(color: isMe ? Colors.white : Colors.black87),
+              ),
             ),
-            child: Text(
-              message.content,
-              style: TextStyle(color: isMe ? Colors.white : Colors.black87),
+
+            // Hàng hiển thị Thời gian + Trạng thái gửi tin nhắn
+            // Hàng hiển thị Thời gian + Trạng thái gửi tin nhắn
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8, left: 4, right: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    DateFormat('HH:mm').format(message.sentAt),
+                    style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                  ),
+                  if (isMe) ...[
+                    const SizedBox(width: 4),
+                    if (message.status == MessageStatus.sending)
+                      const SizedBox(
+                        width: 10,
+                        height: 10,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.grey,
+                          ),
+                        ),
+                      )
+                    else if (message.status == MessageStatus.sent)
+                      Icon(Icons.check, size: 12, color: Colors.grey[600])
+                    // SENIOR REFACTOR: Biến trạng thái lỗi thành nút bấm cứu hộ dữ liệu
+                    else if (message.status == MessageStatus.failed)
+                      GestureDetector(
+                        onTap: () {
+                          // Gọi hàm xử lý gửi lại, truyền ID duy nhất của tin nhắn vào
+                          context.read<ChatProvider>().retrySendMessage(
+                            message.id,
+                          );
+                        },
+                        child: const Row(
+                          children: [
+                            Icon(Icons.refresh, size: 12, color: Colors.red),
+                            SizedBox(width: 2),
+                            Text(
+                              "Gửi lại",
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8, left: 4, right: 4),
-            child: Text(
-              DateFormat('HH:mm').format(message.sentAt),
-              style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -160,10 +214,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 onPressed: () {
                   if (_ctrl.text.trim().isEmpty) return;
 
-                  // Dùng context.read để gọi event mà không build lại toàn bộ UI
+                  // SENIOR REFACTOR: UI bây giờ không cần tự tạo ID bằng Timestamp nữa.
+                  // Việc "Vượt cấp" sinh ID ở UI đã được loại bỏ để tuân thủ tính đóng gói.
                   context.read<ChatProvider>().SendMessage(
-                    DateTime.now().millisecondsSinceEpoch
-                        .toString(), // Tạo ID ngẫu nhiên bằng Timestamp
                     _ctrl.text.trim(),
                     widget.roomId,
                     currentUserId,

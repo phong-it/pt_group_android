@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -16,6 +18,9 @@ class OrderDetailsScreen extends StatefulWidget {
 class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   late String _orderId;
   bool _isInitialized = false;
+
+  // Khai báo ở trên cùng của State class
+  StreamSubscription<Map<String, dynamic>>? _orderStatusSubscription;
 
   @override
   void didChangeDependencies() {
@@ -39,20 +44,33 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     final socketService = context.read<SocketService>();
     final orderProvider = context.read<OrderProvider>();
 
-    socketService.socket.off('order_status_changed');
-    socketService.socket.on('order_status_changed', (data) {
+    // SENIOR TIP: Hủy subscription cũ (nếu có) trước khi lắng nghe mới
+    // Cách này thay thế hoàn toàn cho lệnh socket.off() cũ để tránh trùng lặp listener
+    _orderStatusSubscription?.cancel();
+
+    // Lắng nghe thông qua Stream công khai từ service
+    _orderStatusSubscription = socketService.onOrderStatusChanged.listen((
+      data,
+    ) {
       final String incomingOrderId = data['orderId'].toString();
       final String newStatus = data['status'].toString();
 
-      // Gọi provider cập nhật
+      // Cập nhật vào Provider
       orderProvider.updateStatusFromSocket(incomingOrderId, newStatus);
 
-      // SnackBar nên lấy label từ Enum sau khi đã parse để test logic
+      // Hiển thị SnackBar an toàn
       if (mounted) {
         final label = _getStatusLabel(orderProvider.currentOrder!.status);
         _showStatusUpdateSnackBar(label);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    // Hủy lắng nghe để tránh rò rỉ bộ nhớ (Memory Leak)
+    _orderStatusSubscription?.cancel();
+    super.dispose();
   }
 
   void _showStatusUpdateSnackBar(String status) {
