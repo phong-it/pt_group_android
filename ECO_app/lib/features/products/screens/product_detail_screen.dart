@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/product_model.dart';
-import '../service/product_bottom_detail.dart';  
+import '../service/product_bottom_detail.dart';
+import 'widgets/product_card.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final ProductModel product;
@@ -123,10 +125,45 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       const Text('Mô tả chi tiết', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 12),
                       Text(widget.product.description, style: const TextStyle(fontSize: 15, height: 1.5, color: Colors.black87)),
-                      const SizedBox(height: 30), 
+                      const SizedBox(height: 16), 
                     ],
                   ),
                 ),
+                const SizedBox(height: 10),
+
+                // Khung Đánh giá sản phẩm
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Đánh giá sản phẩm', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          Row(
+                            children: [
+                              Icon(Icons.star, color: Colors.amber, size: 20),
+                              SizedBox(width: 4),
+                              Text('0.0 (0 đánh giá)', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Center(
+                        child: Text('Chưa có đánh giá nào cho sản phẩm này.', style: TextStyle(color: Colors.grey.shade500)),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // Khung Sản phẩm tương tự
+                _buildSimilarProducts(),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -148,6 +185,77 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           Icon(icon, size: 14, color: color),
           const SizedBox(width: 4),
           Text(text, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  // === SẢN PHẨM TƯƠNG TỰ ===
+  Widget _buildSimilarProducts() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'Sản phẩm tương tự',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(height: 12),
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('products')
+                .where('category', isEqualTo: widget.product.category)
+                .limit(11) // lấy dư 1 vì sẽ exclude chính nó
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator(color: Colors.green));
+              }
+
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Center(
+                  child: Text('Không có sản phẩm tương tự', style: TextStyle(color: Colors.grey)),
+                );
+              }
+
+              // Lọc bỏ sản phẩm hiện tại
+              final similarProducts = snapshot.data!.docs
+                  .map((doc) => ProductModel.fromFirestore(doc))
+                  .where((p) => p.id != widget.product.id)
+                  .take(10)
+                  .toList();
+
+              if (similarProducts.isEmpty) {
+                return const Center(
+                  child: Text('Không có sản phẩm tương tự', style: TextStyle(color: Colors.grey)),
+                );
+              }
+
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.68,
+                ),
+                itemCount: similarProducts.length,
+                itemBuilder: (context, index) {
+                  return ProductCard(
+                    product: similarProducts[index],
+                    primaryColor: Colors.green,
+                  );
+                },
+              );
+            },
+          ),
         ],
       ),
     );

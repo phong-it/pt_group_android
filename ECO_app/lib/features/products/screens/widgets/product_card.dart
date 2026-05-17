@@ -13,6 +13,27 @@ class ProductCard extends StatelessWidget {
     required this.primaryColor,
   });
 
+  Color _getConditionColor(int percent) {
+    if (percent == 100) return Colors.green;
+    if (percent >= 50) return Colors.orange;
+    return Colors.red;
+  }
+
+  String _formatPrice(double price) {
+    String s = price.toStringAsFixed(0);
+    String result = '';
+    int count = 0;
+    for (int i = s.length - 1; i >= 0; i--) {
+      result = s[i] + result;
+      count++;
+      if (count == 3 && i != 0) {
+        result = '.' + result;
+        count = 0;
+      }
+    }
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -41,7 +62,7 @@ class ProductCard extends StatelessWidget {
           children: [
             // Phân nửa trên: Ảnh + Tag
             Expanded(
-              flex: 5,
+              flex: 6,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -99,7 +120,7 @@ class ProductCard extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
+                        color: _getConditionColor(product.conditionPercent).withOpacity(0.9),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                             color: Colors.white.withOpacity(0.2), width: 0.5),
@@ -108,7 +129,7 @@ class ProductCard extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(Icons.auto_awesome_rounded,
-                              color: Colors.amber, size: 12),
+                              color: Colors.white, size: 12),
                           const SizedBox(width: 4),
                           Text(
                             'Mới ${product.conditionPercent}%',
@@ -130,10 +151,10 @@ class ProductCard extends StatelessWidget {
             Expanded(
               flex: 4,
               child: Padding(
-                padding: const EdgeInsets.all(12.0),
+                padding: const EdgeInsets.only(top: 18.0, left: 12.0, right: 12.0, bottom: 12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Text(
                       product.name,
@@ -146,11 +167,12 @@ class ProductCard extends StatelessWidget {
                         height: 1.3,
                       ),
                     ),
+                    const SizedBox(height: 6),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${product.price.toStringAsFixed(0)} đ',
+                          '${_formatPrice(product.price)} đ',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,

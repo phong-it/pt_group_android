@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/features/products/providers/product_provider.dart';
 import '../../chat/screens/chat_list_screen.dart';
+import 'add_edit_product_screen.dart';
 
 // Import các UI Widgets
 import 'widgets/quick_actions.dart';
@@ -66,13 +67,33 @@ class _ProductListScreenState extends State<ProductListScreen> {
         ),
         actions: [
           Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: primaryColor,
+            ),
+            child: IconButton(
+              padding: const EdgeInsets.all(6),
+              constraints: const BoxConstraints(),
+              icon: const Icon(Icons.add, color: Colors.white, size: 20),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AddProductScreen()),
+                );
+              },
+            ),
+          ),
+          Container(
             margin: const EdgeInsets.only(right: 12),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.grey[100],
             ),
             child: IconButton(
-              icon: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.black87, size: 22),
+              padding: const EdgeInsets.all(6),
+              constraints: const BoxConstraints(),
+              icon: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.black87, size: 20),
               onPressed: () {
                 Navigator.push(
                   context,
@@ -94,7 +115,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
               // 1. THANH TÌM KIẾM
               Container(
                 color: Colors.white,
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.grey[100],

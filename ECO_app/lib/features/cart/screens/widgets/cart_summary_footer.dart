@@ -12,31 +12,44 @@ class CartSummaryFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
     final isMarket = tabIndex == 0;
+    final selectedCount = isMarket
+        ? cart.selectedMarketItems.length
+        : cart.selectedRecycleItems.length;
+    final hasSelection = selectedCount > 0;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
       color: const Color(0xFFF8F9FA),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            'Amount',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Tổng cộng',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                'Đã chọn $selectedCount sản phẩm',
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _row(
-            'Item total',
+            'Tạm tính',
             isMarket
-                ? Formatters.money(cart.totalMarketPrice)
+                ? Formatters.money(cart.marketSubtotal)
                 : '${cart.totalRecyclePoints} pts',
           ),
 
-          if (isMarket) ...[
-            const SizedBox(height: 10),
-            _row('Delivery fee', '30.000 ₫'),
+          if (isMarket && hasSelection) ...[
+            const SizedBox(height: 8),
+            _row('Phí vận chuyển', Formatters.money(cart.shippingFee)),
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
+              padding: EdgeInsets.symmetric(vertical: 12),
               child: _DottedSeparator(),
             ),
           ],
@@ -45,13 +58,15 @@ class CartSummaryFooter extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Total',
+                'Thành tiền',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               Text(
-                isMarket
-                    ? Formatters.money(cart.totalMarketPrice + 30000)
-                    : '${cart.totalRecyclePoints} pts',
+                hasSelection
+                    ? (isMarket
+                        ? Formatters.money(cart.totalMarketPrice)
+                        : '${cart.totalRecyclePoints} pts')
+                    : '--',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -59,8 +74,8 @@ class CartSummaryFooter extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 24),
-          _buildCheckoutBtn(context, isMarket),
+          const SizedBox(height: 20),
+          _buildCheckoutBtn(context, isMarket, hasSelection),
         ],
       ),
     );
@@ -76,24 +91,26 @@ class CartSummaryFooter extends StatelessWidget {
     );
   }
 
-  Widget _buildCheckoutBtn(BuildContext context, bool isMarket) {
+  Widget _buildCheckoutBtn(BuildContext context, bool isMarket, bool hasSelection) {
     return SizedBox(
       width: double.infinity,
-      height: 58,
+      height: 54,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.black,
+          backgroundColor: hasSelection ? Colors.black : Colors.grey.shade300,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
         ),
-        onPressed: () => Navigator.pushNamed(context, AppRoutes.checkout),
+        onPressed: hasSelection
+            ? () => Navigator.pushNamed(context, AppRoutes.checkout)
+            : null,
         child: Text(
-          isMarket ? 'Thực hiện thanh toán' : 'Book Collection',
-          style: const TextStyle(
+          isMarket ? 'Thanh toán' : 'Đổi quà',
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: hasSelection ? Colors.white : Colors.grey.shade500,
           ),
         ),
       ),

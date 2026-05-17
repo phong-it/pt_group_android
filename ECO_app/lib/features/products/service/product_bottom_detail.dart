@@ -6,6 +6,7 @@ import '../screens/add_edit_product_screen.dart';
 import '../../cart/providers/cart_provider.dart';
 import '../../cart/models/cart_item_model.dart';
 import '../../chat/screens/chat_screen.dart';
+import '../../../core/constants/app_routes.dart';
 
 class ProductBottomBar extends StatelessWidget {
   final ProductModel product;
@@ -40,21 +41,18 @@ class ProductBottomBar extends StatelessWidget {
   Widget _buildBuyerActions(BuildContext context, String? currentUserId) {
     return Row(
       children: [
-        Expanded(
-          flex: 1,
-          child: OutlinedButton.icon(
+        // Nút Chat (icon only)
+        SizedBox(
+          width: 52,
+          height: 48,
+          child: OutlinedButton(
             style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              padding: EdgeInsets.zero,
               foregroundColor: Colors.green,
               side: const BorderSide(color: Colors.green),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-            ),
-            icon: const Icon(Icons.chat_bubble_outline),
-            label: const Text(
-              'Chat',
-              style: TextStyle(fontWeight: FontWeight.bold),
             ),
             onPressed: () {
               if (currentUserId == null) {
@@ -67,7 +65,6 @@ class ProductBottomBar extends StatelessWidget {
                 return;
               }
 
-              // Tạo Room ID từ Firebase UIDs
               final roomId = _generateRoomId(
                 currentUserId,
                 product.sellerId,
@@ -79,35 +76,73 @@ class ProductBottomBar extends StatelessWidget {
                 MaterialPageRoute(
                   builder: (context) => ChatScreen(
                     roomId: roomId,
-                    receiverName:
-                        "Người bán", // Có thể thay bằng product.sellerName nếu có
+                    receiverName: "Người bán",
                   ),
                 ),
               );
             },
+            child: const Icon(Icons.chat_bubble_outline, size: 22),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
+
+        // Nút Thêm vào giỏ
         Expanded(
-          flex: 2,
-          child: ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
-            icon: const Icon(Icons.add_shopping_cart, color: Colors.white),
-            label: const Text(
-              'Thêm vào giỏ',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
+          child: SizedBox(
+            height: 48,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.green,
+                side: const BorderSide(color: Colors.green, width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
+              icon: const Icon(Icons.add_shopping_cart, size: 20),
+              label: const Text(
+                'Thêm giỏ',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              onPressed: () {
+                final cart = Provider.of<CartProvider>(context, listen: false);
+                cart.addProduct(product, CartItemType.market);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Đã thêm vào giỏ hàng!'),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              },
             ),
-            onPressed: () {
-              final cart = Provider.of<CartProvider>(context, listen: false);
-              cart.addProduct(product, CartItemType.market);
-            },
+          ),
+        ),
+        const SizedBox(width: 10),
+
+        // Nút Mua ngay
+        Expanded(
+          child: SizedBox(
+            height: 48,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              icon: const Icon(Icons.flash_on, size: 20),
+              label: const Text(
+                'Mua ngay',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              onPressed: () {
+                final cart = Provider.of<CartProvider>(context, listen: false);
+                cart.addProduct(product, CartItemType.market);
+                Navigator.pushNamed(context, AppRoutes.checkout);
+              },
+            ),
           ),
         ),
       ],
