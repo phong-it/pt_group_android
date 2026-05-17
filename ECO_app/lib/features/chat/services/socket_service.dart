@@ -2,12 +2,19 @@ import 'dart:async';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import '../../../core/network/api_config.dart';
 
+// SENIOR ADD: Định nghĩa trạng thái kết nối của Socket
+enum SocketState { connected, reconnecting, disconnected }
+
 class SocketService {
   IO.Socket? _socket;
 
   // StreamController quản lý luồng tin nhắn đi vào app
   final _messageController = StreamController<Map<String, dynamic>>.broadcast();
   Stream<Map<String, dynamic>> get onMessage => _messageController.stream;
+
+  // SENIOR IMPLEMENTATION: Stream điều phối trạng thái kết nối toàn cục
+  final _statusController = StreamController<SocketState>.broadcast();
+  Stream<SocketState> get onStatusChanged => _statusController.stream;
 
   // Thêm vào cùng chỗ với _messageController
   final _orderStatusController =
@@ -26,9 +33,28 @@ class SocketService {
       ApiConfig.socketUrl,
       IO.OptionBuilder()
           .setTransports(['websocket'])
-          .enableAutoConnect()
+          .enableAutoConnect() // BẮT BUỘC: Để thư viện tự động kích hoạt cơ chế retry khi rớt mạng
+          .setReconnectionAttempts(9999) // Thử lại liên tục không bỏ cuộc
+          .setReconnectionDelay(2000) // Cứ sau 2 giây sẽ thử kết nối lại 1 lần
           .build(),
     );
+
+    // SENIOR LIFE-CYCLE CAPTURE: Bắt trọn vẹn các trạng thái mạng của Socket
+    _socket!.onConnect((_) {
+      _statusController.add(SocketState.connected);
+    });
+
+    _socket!.onDisconnect((_) {
+      _statusController.add(SocketState.reconnecting);
+    });
+
+    _socket!.onReconnectAttempt((_) {
+      _statusController.add(SocketState.reconnecting);
+    });
+
+    _socket!.onConnectError((_) {
+      _statusController.add(SocketState.reconnecting);
+    });
 
     _socket!.connect();
 

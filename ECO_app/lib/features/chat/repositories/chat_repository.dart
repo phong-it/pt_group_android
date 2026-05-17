@@ -11,6 +11,8 @@ class ChatRepository {
   // SENIOR DESIGN: Dùng StreamSubscription để quản lý vòng đời lắng nghe dữ liệu
   StreamSubscription<Map<String, dynamic>>? _messageSubscription;
 
+  Stream<SocketState> get onConnectionStatus => _socketService.onStatusChanged;
+
   ChatRepository(this._socketService);
 
   void connect() {
@@ -95,39 +97,45 @@ class ChatRepository {
     );
   }
 
-  // SENIOR ADD: Hàm lấy lịch sử tin nhắn từ Remote DB
-  // Thiết kế hàm trả về Future<List<...>> giúp Provider dễ dàng async/await
+  // SENIOR REFACTOR: Nâng cấp hàm lấy lịch sử hỗ trợ Phân trang (Pagination)
+  // Nhận vào mốc thời gian `lastSentAt` của tin nhắn cũ nhất hiện tại trên UI
   Future<List<ChatMessageModel>> getChatHistory(
     String roomId, {
-    int limit = 50,
+    int limit =
+        20, // SENIOR CHOSEN: Lấy 20 tin mỗi trang theo đúng yêu cầu Story
+    DateTime? lastSentAt,
   }) async {
     try {
       developer.log(
-        'Đang tải lịch sử từ Firestore cho room: $roomId',
+        'Tải trang tiếp theo cho room: $roomId. Mốc thời gian: $lastSentAt',
         name: 'ChatRepository',
       );
 
-      final snapshot = await FirebaseFirestore.instance
+      // Khởi tạo query cơ bản ban đầu
+      var query = FirebaseFirestore.instance
           .collection('chat_messages')
           .where('roomId', isEqualTo: roomId)
           .orderBy('sentAt', descending: true)
-          .limit(limit)
-          .get();
+          .limit(limit);
 
-      // Parse dữ liệu thô từ DB sang List Model của Dart
-      final List<ChatMessageModel> historyMessages = snapshot.docs.map((doc) {
+      // SENIOR INSTRUCTION: Nếu có mốc thời gian cũ, sử dụng startAfter để Firestore
+      // bỏ qua các tin nhắn đã có trên UI và lấy tiếp các tin nhắn cũ hơn nữa.
+      if (lastSentAt != null) {
+        query = query.startAfter([Timestamp.fromDate(lastSentAt)]);
+      }
+
+      final snapshot = await query.get();
+
+      return snapshot.docs.map((doc) {
         return ChatMessageModel.fromJson({...doc.data(), 'id': doc.id});
       }).toList();
-
-      return historyMessages;
     } catch (e, stackTrace) {
       developer.log(
-        'Lỗi rò rỉ tại Firestore khi lấy history',
+        'Lỗi phân trang tại Firestore',
         error: e,
         stackTrace: stackTrace,
         name: 'ChatRepository',
       );
-      // Rethrow để tầng Provider có thể bắt được lỗi và hiển thị lên UI nếu cần
       rethrow;
     }
   }
