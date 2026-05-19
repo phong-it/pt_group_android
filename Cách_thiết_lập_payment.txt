@@ -1,0 +1,16 @@
+1. Download ngrok để public api/payos-webhook
+    khoan hẳn tắt web, sau khi nhấn tải sẽ có lệnh Add your authtoken
+    cài đặt app nó sẽ chạy cmd lên, paste cái authtoken Enter
+    dùng tiếp lệnh "ngrok http 3001" khi nào nó hiện Session Status online là được
+    không được tắt khi bật app test. QUAN TRỌNG QUAN TRỌNG
+
+2. Tạo tài khoản payOS
+    Tạo tài khoản cá nhân, xác minh bằng cccd các thứ
+    thêm ngân hàng vào
+
+    Qua tab kênh thanh toán, đặt tên thanh toán vs ảnh
+    sau khi tạo xong nhấn vào bánh răng để cài đặt:
+        ở đó có thông tin cấu hình cần thiết paste vào file .env
+        Còn Webhook url thì sao chép bên ngrok dòng forwarding:  https://agenda-evolution-sake.ngrok-free.dev/api/payos-webhook
+            thêm /api/payos-webhook để public nó, nhận thông tin chuyển khoản từ payos chứ nó local thì payos ko báo đc
+    Nhấn lưu là hoàn tất
