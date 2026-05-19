@@ -5,8 +5,12 @@ const router = express.Router();
 const verifyToken = require('../middlewares/authMiddleware');
 
 // 2. Import Controllers
+<<<<<<< HEAD
 // CHỈ SỬA TẠI ĐÂY: Thêm hàm receivePayOSWebhook nhận từ checkoutController
 const { processCheckout, receivePayOSWebhook } = require('../controllers/checkoutController');
+=======
+const { processCheckout } = require('../controllers/checkoutController');
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
 const { syncCart } = require('../controllers/cartController');
 const { getOrders, getOrderDetail } = require('../controllers/orderController'); // Thêm getOrderDetail
 const shipperController = require('../controllers/shipperController');
@@ -14,9 +18,12 @@ const shipperController = require('../controllers/shipperController');
 // 3. ĐỊNH NGHĨA CÁC ROUTES
 // ==========================================
 
+<<<<<<< HEAD
 //Cổng tiếp nhận Webhook từ đối tác PayOS (Public - Không bọc verifyToken)
 router.post('/payos-webhook', receivePayOSWebhook);
 
+=======
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
 // Route thanh toán
 router.post('/checkout', verifyToken, processCheckout);
 

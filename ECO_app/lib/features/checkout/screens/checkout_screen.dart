@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,6 +15,19 @@ import 'widgets/checkout_summary_footer.dart';
 import '../../profile/service/profile_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:frontend/features/chat/services/socket_service.dart';
+=======
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../cart/providers/cart_provider.dart';
+import '../../notifications/providers/notification_provider.dart';
+import '../services/checkout_service.dart';
+import '../../../core/constants/app_routes.dart';
+import '../../../core/utils/formatters.dart';
+import 'widgets/checkout_form_section.dart'; // Import file số 2
+import 'widgets/checkout_summary_footer.dart'; // Import file số 3
+import '../../profile/service/profile_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -33,16 +47,24 @@ class _CheckoutScreenState extends State<CheckoutScreen>
   final CheckoutService _checkoutService = CheckoutService();
   String? _selectedVoucherId;
 
+<<<<<<< HEAD
   // BIẾN TRẠNG THÁI HIỂN THỊ MÃ QR TẠI TAB KHÔNG ĐỔI TRANG
   QrDataModel? _generatedQrData;
   String? _createdOrderId;
   double _orderAmount = 0.0;
   StreamSubscription<Map<String, dynamic>>? _socketSubscription;
 
+=======
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+<<<<<<< HEAD
+=======
+
+    // Gọi hàm nạp dữ liệu tự động
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
     _loadUserProfile();
 
     _tabController.addListener(() {
@@ -51,13 +73,25 @@ class _CheckoutScreenState extends State<CheckoutScreen>
   }
 
   Future<void> _loadUserProfile() async {
+<<<<<<< HEAD
     final String? uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
+=======
+    // 1. Lấy UID (Giả sử bạn dùng FirebaseAuth trực tiếp hoặc qua AuthService)
+    final String? uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    // 2. Bật trạng thái loading nếu cần (hoặc để mặc định)
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
     final profileService = ProfileService();
     final userData = await profileService.getUserProfile(uid);
 
     if (userData != null && mounted) {
+<<<<<<< HEAD
+=======
+      // 3. Cập nhật Controller
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
       setState(() {
         _nameController.text = userData['name'] ?? '';
         _phoneController.text = userData['phone'] ?? '';
@@ -66,6 +100,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     }
   }
 
+<<<<<<< HEAD
   // KHỞI ĐỘNG BỘ LẮNG NGHE REAL-TIME QUA KÊNH CÓ SẴN CỦA SOCKET SERVICE
   void _startPaymentSocketListener(String orderId) {
     final socketService = context.read<SocketService>();
@@ -118,6 +153,10 @@ class _CheckoutScreenState extends State<CheckoutScreen>
   @override
   void dispose() {
     _socketSubscription?.cancel();
+=======
+  @override
+  void dispose() {
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
     _nameController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
@@ -125,6 +164,10 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     super.dispose();
   }
 
+<<<<<<< HEAD
+=======
+  // Logic xử lý API (Giữ nguyên như code của bạn)
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
   Future<void> _handlePaymentSuccess(
     BuildContext context,
     String paymentMethod,
@@ -134,14 +177,20 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     });
 
     try {
+<<<<<<< HEAD
       // 🔴 CHÈN 2 DÒNG LỆNH PRINT DEBUG NÀY VÀO ĐỂ THEO DÕI TERMINAL FLUTTER:
       print("🚀 [FLUTTER DEBUG] NÚT ĐÃ BẤM - PHƯƠNG THỨC: $paymentMethod");
       String fullAddress =
           "${_nameController.text} - ${_phoneController.text} - ${_addressController.text}";
+=======
+      String fullAddress =
+          "${_nameController.text} - ${_phoneController.text} - ${_addressController.text} (PT: $paymentMethod)";
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
 
       final result = await _checkoutService.placeOrder(
         voucherId: _selectedVoucherId,
         shippingAddress: fullAddress,
+<<<<<<< HEAD
         paymentMethod: paymentMethod,
       );
 
@@ -188,14 +237,43 @@ class _CheckoutScreenState extends State<CheckoutScreen>
           arguments: result['orderId'],
         );
       }
+=======
+      );
+
+      if (!mounted) return;
+      final cartProvider = context.read<CartProvider>();
+      final notifProvider = context.read<NotificationProvider>();
+
+      cartProvider.clearMarketOnly();
+      // notifProvider.addNotification(...);
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Đặt hàng thành công!')));
+
+      Navigator.pushReplacementNamed(
+        context,
+        AppRoutes.orderDetail,
+        arguments: result['orderId'],
+      );
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
       );
+<<<<<<< HEAD
       setState(() {
         _isLoading = false;
       });
+=======
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
     }
   }
 
@@ -233,6 +311,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
       body: Column(
         children: [
           Expanded(
+<<<<<<< HEAD
             child: _generatedQrData != null
                 ? _buildInTabQRSection(
                     _generatedQrData!,
@@ -252,10 +331,25 @@ class _CheckoutScreenState extends State<CheckoutScreen>
             )
           else
             _buildWaitingFooter(),
+=======
+            child: CheckoutFormSection(
+              nameController: _nameController,
+              phoneController: _phoneController,
+              addressController: _addressController,
+              tabController: _tabController,
+            ),
+          ),
+          CheckoutSummaryFooter(
+            isLoading: _isLoading,
+            tabIndex: _tabController.index,
+            onConfirm: _onConfirmOrder,
+          ),
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
         ],
       ),
     );
   }
+<<<<<<< HEAD
 
   // KHUNG VẼ MÃ VIETQR ĐỘNG NGAY TRÊN INTERFACE TAB THANH TOÁN
   Widget _buildInTabQRSection(QrDataModel qrInfo) {
@@ -443,4 +537,6 @@ class _CheckoutScreenState extends State<CheckoutScreen>
       ),
     );
   }
+=======
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
 }

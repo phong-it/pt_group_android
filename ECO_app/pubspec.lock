@@ -808,6 +808,7 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.0"
+<<<<<<< HEAD
   qr:
     dependency: transitive
     description:
@@ -824,6 +825,8 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.0"
+=======
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
   rxdart:
     dependency: transitive
     description:

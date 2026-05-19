@@ -1,6 +1,10 @@
 import 'dart:async';
+<<<<<<< HEAD
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:flutter/services.dart';
+=======
+
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -19,11 +23,21 @@ class OrderDetailsScreen extends StatefulWidget {
 class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   late String _orderId;
   bool _isInitialized = false;
+<<<<<<< HEAD
+=======
+
+  // Khai báo ở trên cùng của State class
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
   StreamSubscription<Map<String, dynamic>>? _orderStatusSubscription;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+<<<<<<< HEAD
+=======
+    // Senior Tip: Sử dụng một flag để đảm bảo logic khởi tạo chỉ chạy 1 lần
+    // trong didChangeDependencies (nơi an toàn để truy cập ModalRoute)
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
     if (!_isInitialized) {
       final args = ModalRoute.of(context)!.settings.arguments;
       if (args is String) {
@@ -35,6 +49,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     }
   }
 
+<<<<<<< HEAD
   void _initSocketListener() {
     final socketService = context.read<SocketService>();
     _orderStatusSubscription?.cancel();
@@ -53,16 +68,59 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             ),
           );
         }
+=======
+  // order_details_screen.dart
+
+  void _initSocketListener() {
+    final socketService = context.read<SocketService>();
+    final orderProvider = context.read<OrderProvider>();
+
+    // SENIOR TIP: Hủy subscription cũ (nếu có) trước khi lắng nghe mới
+    // Cách này thay thế hoàn toàn cho lệnh socket.off() cũ để tránh trùng lặp listener
+    _orderStatusSubscription?.cancel();
+
+    // Lắng nghe thông qua Stream công khai từ service
+    _orderStatusSubscription = socketService.onOrderStatusChanged.listen((
+      data,
+    ) {
+      final String incomingOrderId = data['orderId'].toString();
+      final String newStatus = data['status'].toString();
+
+      // Cập nhật vào Provider
+      orderProvider.updateStatusFromSocket(incomingOrderId, newStatus);
+
+      // Hiển thị SnackBar an toàn
+      if (mounted) {
+        final label = _getStatusLabel(orderProvider.currentOrder!.status);
+        _showStatusUpdateSnackBar(label);
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
       }
     });
   }
 
   @override
   void dispose() {
+<<<<<<< HEAD
+=======
+    // Hủy lắng nghe để tránh rò rỉ bộ nhớ (Memory Leak)
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
     _orderStatusSubscription?.cancel();
     super.dispose();
   }
 
+<<<<<<< HEAD
+=======
+  void _showStatusUpdateSnackBar(String status) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("📦 Trạng thái đơn hàng: ${_getStatusLabel(status)}"),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.blueAccent,
+      ),
+    );
+  }
+
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
   Future<void> _loadOrderData() async {
     final authProvider = context.read<AuthProvider>();
     final token = await authProvider.getUserToken();
@@ -73,6 +131,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
+=======
+    // Watch để rebuild khi provider thay đổi
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
     final orderProvider = context.watch<OrderProvider>();
     final order = orderProvider.currentOrder;
 
@@ -85,7 +147,18 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
+<<<<<<< HEAD
       title: const Text('Chi tiết đơn hàng', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600, fontSize: 18)),
+=======
+      title: const Text(
+        'Chi tiết đơn hàng',
+        style: TextStyle(
+          color: Colors.black,
+          fontWeight: FontWeight.w600,
+          fontSize: 18,
+        ),
+      ),
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
       centerTitle: true,
       elevation: 0,
       backgroundColor: Colors.white,
@@ -109,12 +182,16 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
           children: [
+<<<<<<< HEAD
             // CHỈ HIỂN THỊ QR NẾU ĐƠN CHƯA ĐƯỢC THANH TOÁN (UNPAID)
             if (order.paymentMethod == 'QR_TRANSFER' && order.paymentStatus == 'unpaid' && order.qrData != null)
               _buildCleanPaymentQRCard(context, order),
               
             const SizedBox(height: 12),
             _buildStatusHeader(order.status, order.paymentStatus),
+=======
+            _buildStatusHeader(order.status),
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
             const SizedBox(height: 16),
             _buildTimelineCard(order.status),
             const SizedBox(height: 16),
@@ -123,6 +200,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               icon: Icons.assignment_outlined,
               content: [
                 _buildDataRow("Mã đơn", order.orderCode, isBold: true),
+<<<<<<< HEAD
+=======
+                _buildDataRow("Ngày đặt", "12/03/2026"), // Mock date
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
                 _buildDataRow("Địa chỉ", order.address),
               ],
             ),
@@ -136,6 +217,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
+<<<<<<< HEAD
   Widget _buildCleanPaymentQRCard(BuildContext context, OrderModel order) {
     final qrInfo = order.qrData!;
     return Container(
@@ -193,6 +275,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
   Widget _buildStatusHeader(OrderStatus status, String paymentStatus) {
     final isPaid = paymentStatus == 'paid';
+=======
+  // --- UI Components Phân mảnh (Method Decomposition) ---
+
+  Widget _buildStatusHeader(OrderStatus status) {
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -207,6 +294,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             child: const Icon(Icons.inventory_2, color: Colors.white),
           ),
           const SizedBox(width: 16),
+<<<<<<< HEAD
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,6 +307,24 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 ),
               ],
             ),
+=======
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Trạng thái hiện tại",
+                style: TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+              Text(
+                _getStatusLabel(status),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: _getStatusColor(status),
+                ),
+              ),
+            ],
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
           ),
         ],
       ),
@@ -229,6 +335,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     final steps = ["Chờ", "Xác nhận", "Giao", "Đã nhận"];
     int currentStep = 0;
 
+<<<<<<< HEAD
     switch (status) {
       case OrderStatus.pending: currentStep = 0; break;
       case OrderStatus.confirmed: currentStep = 1; break;
@@ -236,6 +343,26 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       case OrderStatus.shipping: currentStep = 2; break;
       case OrderStatus.delivered: currentStep = 3; break;
       case OrderStatus.cancelled: currentStep = -1; break;
+=======
+    // Senior Tip: Sử dụng Switch case hoặc Map để quản lý step cho sạch
+    switch (status) {
+      case OrderStatus.pending:
+        currentStep = 0;
+        break;
+      case OrderStatus.confirmed:
+        currentStep = 1;
+        break;
+      case OrderStatus.picked_up: // Shipper lấy hàng là bắt đầu Giao
+      case OrderStatus.shipping:
+        currentStep = 2;
+        break;
+      case OrderStatus.delivered:
+        currentStep = 3;
+        break;
+      case OrderStatus.cancelled:
+        currentStep = -1;
+        break;
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
     }
 
     return Card(
@@ -252,6 +379,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 children: [
                   Row(
                     children: [
+<<<<<<< HEAD
                       Expanded(child: Divider(color: index == 0 ? Colors.transparent : (isDone ? Colors.green : Colors.grey[300]))),
                       Icon(isDone ? Icons.check_circle : Icons.radio_button_off, size: 20, color: isDone ? Colors.green : Colors.grey[400]),
                       Expanded(child: Divider(color: index == steps.length - 1 ? Colors.transparent : (index < currentStep ? Colors.green : Colors.grey[300]))),
@@ -259,6 +387,39 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(steps[index], style: TextStyle(fontSize: 11, color: isDone ? Colors.black : Colors.grey)),
+=======
+                      Expanded(
+                        child: Divider(
+                          color: index == 0
+                              ? Colors.transparent
+                              : (isDone ? Colors.green : Colors.grey[300]),
+                        ),
+                      ),
+                      Icon(
+                        isDone ? Icons.check_circle : Icons.radio_button_off,
+                        size: 20,
+                        color: isDone ? Colors.green : Colors.grey[400],
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: index == steps.length - 1
+                              ? Colors.transparent
+                              : (index < currentStep
+                                    ? Colors.green
+                                    : Colors.grey[300]),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    steps[index],
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDone ? Colors.black : Colors.grey,
+                    ),
+                  ),
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
                 ],
               ),
             );
@@ -268,6 +429,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
+<<<<<<< HEAD
   Widget _buildInfoSection({required String title, required IconData icon, required List<Widget> content}) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -276,6 +438,29 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [Icon(icon, size: 20), const SizedBox(width: 8), Text(title, style: const TextStyle(fontWeight: FontWeight.bold))]),
+=======
+  Widget _buildInfoSection({
+    required String title,
+    required IconData icon,
+    required List<Widget> content,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 20),
+              const SizedBox(width: 8),
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
           const Divider(height: 24),
           ...content,
         ],
@@ -283,13 +468,18 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
+<<<<<<< HEAD
   // TÍNH TOÁN HIỂN THỊ ĐỘNG CHUẨN KẾ TOÁN: TRẢ VỀ TỔNG NỘP HỆ THỐNG BẰNG 0Đ
   Widget _buildPaymentSummary(OrderModel order) {
     final bool isPaid = order.paymentStatus == 'paid';
+=======
+  Widget _buildPaymentSummary(OrderModel order) {
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
     return _buildInfoSection(
       title: "Tổng cộng thanh toán",
       icon: Icons.payments_outlined,
       content: [
+<<<<<<< HEAD
         _buildDataRow("Tổng tiền hàng", "${order.finalAmount.toStringAsFixed(0)}đ"),
         _buildDataRow("Phí vận chuyển", "Miễn phí", color: Colors.green),
         if (isPaid)
@@ -301,26 +491,72 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           isBold: true,
           fontSize: 18,
           color: isPaid ? Colors.green.shade700 : Colors.redAccent,
+=======
+        _buildDataRow(
+          "Tổng tiền hàng",
+          "${order.finalAmount.toStringAsFixed(0)}đ",
+        ),
+        _buildDataRow("Phí vận chuyển", "Miễn phí", color: Colors.green),
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: Divider(),
+        ),
+        _buildDataRow(
+          "Tổng thanh toán",
+          "${order.finalAmount.toStringAsFixed(0)}đ",
+          isBold: true,
+          fontSize: 18,
+          color: Colors.redAccent,
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
         ),
       ],
     );
   }
 
+<<<<<<< HEAD
   Widget _buildDataRow(String label, String value, {bool isBold = false, double fontSize = 14, Color? color}) {
+=======
+  Widget _buildDataRow(
+    String label,
+    String value, {
+    bool isBold = false,
+    double fontSize = 14,
+    Color? color,
+  }) {
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+<<<<<<< HEAD
           Flexible(child: Text(value, textAlign: TextAlign.end, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal, fontSize: fontSize, color: color))),
+=======
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+                fontSize: fontSize,
+                color: color,
+              ),
+            ),
+          ),
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
         ],
       ),
     );
   }
 
   Widget _buildActionButtons(OrderModel order) {
+<<<<<<< HEAD
     if (order.status == OrderStatus.pending || order.status == OrderStatus.confirmed) {
+=======
+    if (order.status == OrderStatus.pending ||
+        order.status == OrderStatus.confirmed) {
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
       return ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.white,
@@ -328,30 +564,65 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           elevation: 0,
           side: const BorderSide(color: Colors.red),
           minimumSize: const Size(double.infinity, 54),
+<<<<<<< HEAD
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         onPressed: () => _confirmCancel(),
         child: const Text("HỦY ĐƠN HÀNG", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+=======
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        onPressed: () => _confirmCancel(),
+        child: const Text(
+          "HỦY ĐƠN HÀNG",
+          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1),
+        ),
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
       );
     }
     return const SizedBox.shrink();
   }
 
+<<<<<<< HEAD
+=======
+  // --- Logic Helpers ---
+
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
   void _confirmCancel() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text("Xác nhận hủy"),
+<<<<<<< HEAD
         content: const Text("Bạn có chắc chắn muốn hủy đơn hàng này? Thao tác này không thể hoàn tác."),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("Quay lại")),
+=======
+        content: const Text(
+          "Bạn có chắc chắn muốn hủy đơn hàng này? Thao tác này không thể hoàn tác.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Quay lại"),
+          ),
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
               await _processCancel();
             },
+<<<<<<< HEAD
             child: const Text("Đồng ý hủy", style: TextStyle(color: Colors.red)),
+=======
+            child: const Text(
+              "Đồng ý hủy",
+              style: TextStyle(color: Colors.red),
+            ),
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
           ),
         ],
       ),
@@ -366,7 +637,15 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     if (token != null) {
       await orderProvider.cancelOrder(token);
       if (!mounted) return;
+<<<<<<< HEAD
       Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
+=======
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.home,
+        (route) => false,
+      );
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
     }
   }
 
@@ -387,12 +666,27 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   String _getStatusLabel(dynamic status) {
     if (status is OrderStatus) {
       switch (status) {
+<<<<<<< HEAD
         case OrderStatus.pending: return "Chờ xử lý";
         case OrderStatus.confirmed: return "Đã xác nhận";
         case OrderStatus.picked_up: return "Shipper đã lấy hàng";
         case OrderStatus.shipping: return "Đang giao hàng";
         case OrderStatus.delivered: return "Đã giao thành công";
         case OrderStatus.cancelled: return "Đã hủy";
+=======
+        case OrderStatus.pending:
+          return "Chờ xử lý";
+        case OrderStatus.confirmed:
+          return "Đã xác nhận";
+        case OrderStatus.picked_up:
+          return "Shipper đã lấy hàng";
+        case OrderStatus.shipping:
+          return "Đang giao hàng";
+        case OrderStatus.delivered:
+          return "Đã giao thành công";
+        case OrderStatus.cancelled:
+          return "Đã hủy";
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
       }
     }
     return status.toString();
@@ -400,6 +694,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
   Color _getStatusColor(OrderStatus status) {
     switch (status) {
+<<<<<<< HEAD
       case OrderStatus.delivered: return Colors.green;
       case OrderStatus.cancelled: return Colors.red;
       case OrderStatus.shipping: return Colors.blue;
@@ -408,3 +703,18 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     }
   }
 }
+=======
+      case OrderStatus.delivered:
+        return Colors.green;
+      case OrderStatus.cancelled:
+        return Colors.red;
+      case OrderStatus.shipping:
+        return Colors.blue;
+      case OrderStatus.pending:
+        return Colors.orange;
+      default:
+        return Colors.blueGrey;
+    }
+  }
+}
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e

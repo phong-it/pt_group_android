@@ -49,7 +49,10 @@ dependencies:
   url_launcher: ^6.3.2
   flutter_polyline_points: ^3.1.0
   uuid: ^4.3.3
+<<<<<<< HEAD
   qr_flutter: ^4.1.0
+=======
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
 dev_dependencies:
   flutter_test:
     sdk: flutter

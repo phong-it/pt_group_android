@@ -1,4 +1,5 @@
 const { db, admin } = require("../config/firebaseConfig");
+<<<<<<< HEAD
 const { PayOS } = require("@payos/node");
 
 // Khởi tạo SDK PayOS với object config
@@ -18,10 +19,20 @@ if (!payos) {
 const processCheckout = async (req, res) => {
     const userId = req.user.uid;
     const { voucherId, shippingAddress, paymentMethod } = req.body; 
+=======
+
+const processCheckout = async (req, res) => {
+    const userId = req.user.uid;
+    const { voucherId, shippingAddress } = req.body;
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
 
     try {
         const batch = db.batch();
 
+<<<<<<< HEAD
+=======
+        // 1. Lấy giỏ hàng từ Firestore
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
         const cartSnapshot = await db.collection('cart_items').where('userId', '==', userId).get();
         if (cartSnapshot.empty) {
             return res.status(400).json({ error: "Giỏ hàng trống!" });
@@ -32,15 +43,31 @@ const processCheckout = async (req, res) => {
 
         cartSnapshot.forEach(doc => {
             const data = doc.data();
+<<<<<<< HEAD
             totalAmount += ((data.price || 0) * data.quantity);
             items.push(data);
             batch.delete(doc.ref);
         });
 
+=======
+
+            // FIX LỖI: Sử dụng data.price (như đã lưu ở cartController) thay vì selectedPrice
+            const itemPrice = data.price || 0;
+            totalAmount += (itemPrice * data.quantity);
+
+            items.push(data);
+
+            // Đưa lệnh xóa món hàng vào hàng đợi Batch
+            batch.delete(doc.ref);
+        });
+
+        // 2. Xử lý Voucher (nếu có)
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
         let discount = 0;
         if (voucherId) {
             const voucherRef = db.collection('vouchers').doc(voucherId);
             const voucherDoc = await voucherRef.get();
+<<<<<<< HEAD
             if (voucherDoc.exists && voucherDoc.data().status === 'active' && voucherDoc.data().userId === userId) {
                 discount = voucherDoc.data().discount_amount;
                 batch.update(voucherRef, { status: "used" });
@@ -78,6 +105,28 @@ const processCheckout = async (req, res) => {
         }
 
         const orderRef = db.collection('orders').doc();
+=======
+
+            if (voucherDoc.exists && voucherDoc.data().status === 'active' && voucherDoc.data().userId === userId) {
+                discount = voucherDoc.data().discount_amount;
+                // Đánh dấu voucher đã dùng
+                batch.update(voucherRef, { status: "used" });
+            } else {
+                return res.status(400).json({ error: "Voucher không hợp lệ hoặc đã được sử dụng!" });
+            }
+        }
+
+        // 3. Tính tiền cuối cùng
+        let finalAmount = totalAmount - discount;
+        if (finalAmount < 0) finalAmount = 0;
+
+        // 4. Tạo Order
+        const orderRef = db.collection('orders').doc();
+
+        // Cấp thêm 1 mã Code dễ đọc cho User (Ví dụ: ECO-847291)
+        const readableCode = `ECO-${Math.floor(100000 + Math.random() * 900000)}`;
+
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
         batch.set(orderRef, {
             orderCode: readableCode,
             userId: userId,
@@ -86,6 +135,7 @@ const processCheckout = async (req, res) => {
             discount: discount,
             finalAmount: finalAmount,
             shippingAddress: shippingAddress || "Chưa cung cấp",
+<<<<<<< HEAD
             paymentMethod: paymentMethod,
             status: "pending", 
             paymentStatus: "unpaid", 
@@ -93,11 +143,19 @@ const processCheckout = async (req, res) => {
             created_at: admin.firestore.FieldValue.serverTimestamp()
         });
 
+=======
+            status: "pending", // Trạng thái: Chờ xác nhận
+            created_at: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        // 5. Thực thi toàn bộ (Batch Commit) - Xóa giỏ, update voucher, tạo order cùng 1 lúc!
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
         await batch.commit();
 
         res.status(200).json({
             message: "Đặt hàng thành công!",
             orderId: orderRef.id,
+<<<<<<< HEAD
             orderCode: readableCode,
             qrData: qrData,
             finalAmount: finalAmount
@@ -167,3 +225,15 @@ const receivePayOSWebhook = async (req, res) => {
 };
 
 module.exports = { processCheckout, receivePayOSWebhook };
+=======
+            orderCode: readableCode
+        });
+
+    } catch (error) {
+        console.error("Lỗi Checkout:", error);
+        res.status(500).json({ error: "Lỗi server khi thanh toán" });
+    }
+};
+
+module.exports = { processCheckout };
+>>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
