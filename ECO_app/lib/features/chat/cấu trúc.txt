@@ -1,0 +1,8 @@
+lib/
+└── modules/
+    └── chat/
+        ├── models/          # Chứa Data Class (JSON mapping)
+        ├── services/        # NƠI MỚI: Quản lý kết nối WebSocket/Socket.io
+        ├── repositories/    # NƠI MỚI: Cầu nối giữa Service và Provider
+        ├── providers/       # Chỉ quản lý State cho UI
+        └── screens/         # Giao diện (Dumb Widgets)

@@ -1,0 +1,23 @@
+lib/
+├── core/                     # LÕI HỆ THỐNG (Dùng chung toàn app)
+│   ├── constants/            # Các hằng số (Colors, Strings, API Endpoints)
+│   ├── network/              # Setup Firebase Core, Dio/Http client
+│   ├── routes/               # Cấu hình điều hướng (App Router)
+│   ├── theme/                # Cấu hình giao diện (Light/Dark mode)
+│   ├── utils/                # Tiện ích (Format tiền tệ, parse ngày tháng)
+│   └── errors/               # Xử lý Exception/Failure chung
+│
+├── shared/                   # TIỆN ÍCH UI & DATA CẤP THẤP
+│   ├── widgets/              # UI components dùng nhiều nơi (CustomButton, Loading)
+│   └── models/               # Các model dùng chéo giữa các tính năng (VD: UserModel)
+│
+├── features/                 # CÁC TÍNH NĂNG CHÍNH (Từ 2 đến 9)
+│   ├── auth/                 # -> (2) Login screen
+│   ├── products/             # -> (3) Product list & (4) Product detail
+│   ├── cart/                 # -> (5) Shopping cart
+│   ├── checkout/             # -> (6) Checkout/billing
+│   ├── notifications/        # -> (7) Notifications screen
+│   ├── store_map/            # -> (8) Map (store location)
+│   └── chat/                 # -> (9) Messaging/chat screen
+│
+└── main.dart                 # Entry point, khởi tạo Firebase & Provider/Bloc

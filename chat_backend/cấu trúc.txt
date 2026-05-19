@@ -1,0 +1,5 @@
+chat_backend/
+├── node_modules/       # (Tự sinh ra khi chạy npm install)
+├── index.js            # File chính chạy Server
+├── package.json        # Chứa thông tin project và các thư viện (socket.io, express)
+└── package-lock.json   # File quản lý phiên bản thư viện
