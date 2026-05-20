@@ -11,10 +11,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-<<<<<<< HEAD
     "@payos/node": "^2.0.5",
-=======
->>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",

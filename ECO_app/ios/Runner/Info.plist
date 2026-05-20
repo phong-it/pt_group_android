@@ -45,5 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSFaceIDUsageDescription</key>
+    <string>Ứng dụng EcoTrade cần sử dụng FaceID/Vân tay để giúp bạn đăng nhập nhanh chóng và bảo mật.</string>
 </dict>
 </plist>

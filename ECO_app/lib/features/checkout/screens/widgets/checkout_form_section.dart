@@ -150,7 +150,6 @@ class CheckoutFormSection extends StatelessWidget {
   }
 
   Widget _buildQRTab(BuildContext context) {
-<<<<<<< HEAD
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -168,38 +167,6 @@ class CheckoutFormSection extends StatelessWidget {
               color: Colors.grey.shade500,
               fontWeight: FontWeight.w500,
               height: 1.4,
-=======
-    final cart = context.watch<CartProvider>();
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        children: [
-          Text(
-            'Quét mã QR bên dưới để thanh toán',
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Image.network(
-              'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=CheckOut_Total_${cart.totalMarketPrice}',
-              height: 180,
-              width: 180,
->>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
             ),
           ),
         ],

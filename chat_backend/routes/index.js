@@ -1,52 +1,42 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
 // 1. Import Middlewares
-const verifyToken = require('../middlewares/authMiddleware');
+const verifyToken = require("../middlewares/authMiddleware");
 
 // 2. Import Controllers
-<<<<<<< HEAD
 // CHỈ SỬA TẠI ĐÂY: Thêm hàm receivePayOSWebhook nhận từ checkoutController
-const { processCheckout, receivePayOSWebhook } = require('../controllers/checkoutController');
-=======
-const { processCheckout } = require('../controllers/checkoutController');
->>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
-const { syncCart } = require('../controllers/cartController');
-const { getOrders, getOrderDetail } = require('../controllers/orderController'); // Thêm getOrderDetail
-const shipperController = require('../controllers/shipperController');
+const {
+  processCheckout,
+  receivePayOSWebhook,
+} = require("../controllers/checkoutController");
+const { syncCart } = require("../controllers/cartController");
+const { getOrders, getOrderDetail } = require("../controllers/orderController"); // Thêm getOrderDetail
+const shipperController = require("../controllers/shipperController");
 // ==========================================
 // 3. ĐỊNH NGHĨA CÁC ROUTES
 // ==========================================
 
-<<<<<<< HEAD
 //Cổng tiếp nhận Webhook từ đối tác PayOS (Public - Không bọc verifyToken)
-router.post('/payos-webhook', receivePayOSWebhook);
+router.post("/payos-webhook", receivePayOSWebhook);
 
-=======
->>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
 // Route thanh toán
-router.post('/checkout', verifyToken, processCheckout);
+router.post("/checkout", verifyToken, processCheckout);
 
 // Route đồng bộ giỏ hàng (QUAN TRỌNG: Đã thêm verifyToken vào giữa)
-router.post('/cart/sync', verifyToken, syncCart);
+router.post("/cart/sync", verifyToken, syncCart);
 
 // API Lấy danh sách đơn hàng
-router.get('/orders', verifyToken, getOrders); // <-- Gọi hàm getOrders
+router.get("/orders", verifyToken, getOrders); // <-- Gọi hàm getOrders
 
 // API Lấy chi tiết một đơn hàng (Thêm mới)
-router.get('/orders/:id', verifyToken, getOrderDetail);
-
-
+router.get("/orders/:id", verifyToken, getOrderDetail);
 
 // API: POST /api/shipper/update-status
-router.post(
-    '/shipper/update-status',
-    shipperController.updateStatusByShipper
-);
+router.post("/shipper/update-status", shipperController.updateStatusByShipper);
 
 // Route dành cho shipper tra cứu đơn hàng bằng mã ECO-xxxx
-router.get('/shipper/order/:orderCode', shipperController.getOrderByCode);
-
+router.get("/shipper/order/:orderCode", shipperController.getOrderByCode);
 
 // Các route tương lai:
 // router.post('/vouchers/redeem', verifyToken, redeemVoucherController);

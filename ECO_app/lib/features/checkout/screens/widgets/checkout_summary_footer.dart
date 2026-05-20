@@ -92,11 +92,7 @@ class CheckoutSummaryFooter extends StatelessWidget {
                       ),
                     )
                   : Text(
-<<<<<<< HEAD
                       isCOD ? 'Xác nhận đặt hàng (COD)' : 'Đặt hàng',
-=======
-                      isCOD ? 'Xác nhận đặt hàng (COD)' : 'Tôi đã chuyển khoản',
->>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,

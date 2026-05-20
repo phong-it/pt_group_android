@@ -2,7 +2,7 @@ name: frontend
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -49,10 +49,10 @@ dependencies:
   url_launcher: ^6.3.2
   flutter_polyline_points: ^3.1.0
   uuid: ^4.3.3
-<<<<<<< HEAD
   qr_flutter: ^4.1.0
-=======
->>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
+  local_auth: ^2.3.0 # Thư viện xử lý sinh trắc học
+  google_sign_in: ^6.2.1 # Thư viện xử lý đăng nhập Google
+  flutter_secure_storage: ^9.0.0 # Lưu trữ token bảo mật để bổ trợ cho sinh trắc học
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -69,7 +69,6 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

@@ -25,14 +25,10 @@ class SocketService {
   bool get isConnected => _socket?.connected ?? false;
 
   void connect() {
-<<<<<<< HEAD
     if (_socket != null && _socket!.connected) {
       print("✅ [SOCKET] Socket đã kết nối sẵn");
       return;
     }
-=======
-    if (_socket != null && _socket!.connected) return;
->>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
 
     print("🔌 Đang kết nối Socket tới: ${ApiConfig.socketUrl}");
 
@@ -65,13 +61,9 @@ class SocketService {
 
     _socket!.connect();
 
-<<<<<<< HEAD
     _socket!.onConnect((_) {
       print('✅ [SOCKET] Kết nối Socket thành công! ID: ${_socket!.id}');
     });
-=======
-    _socket!.onConnect((_) => print('✅ Đã kết nối Socket thành công!'));
->>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
 
     // SENIOR FIX: Sửa tên Event thành 'receive_message' cho đồng bộ với Repo
     // Đồng thời kiểm tra data null trước khi push vào Stream công khai
@@ -82,14 +74,9 @@ class SocketService {
     });
 
     // SENIOR ADD: Lắng nghe sự kiện đổi trạng thái đơn hàng và đẩy vào Stream riêng
-<<<<<<< HEAD
     _socket!.on('orderStatusChanged', (data) {
       if (data != null) {
         print('🔔 [SOCKET] Nhận được thông báo đơn hàng: $data');
-=======
-    _socket!.on('order_status_changed', (data) {
-      if (data != null) {
->>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
         _orderStatusController.add(Map<String, dynamic>.from(data));
       }
     });

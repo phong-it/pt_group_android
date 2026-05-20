@@ -1,18 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-<<<<<<< HEAD
 import 'package:intl/intl.dart';
 
 import '../providers/order_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../models/order_model.dart';
-=======
-import 'package:intl/intl.dart'; // Dùng để format tiền và ngày tháng
-
-import '../providers/order_provider.dart';
-import '../../auth/providers/auth_provider.dart';
-import '../models/order_model.dart'; // Giả sử bạn có model này
->>>>>>> cd79272da2695df86e05e55f977e7eb3d845ca3e
 import 'order_details_screen.dart';
 import '../../profile/screens/profile_menu.dart';
 
