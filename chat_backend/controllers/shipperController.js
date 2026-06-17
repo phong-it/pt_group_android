@@ -71,15 +71,35 @@ exports.updateStatusByShipper = async (req, res) => {
             updated_by_role: "shipper"
         });
 
+        const customerId = String(currentData.userId).trim();
+
+        // 5.5 Tạo thông báo lưu vào Database (để user xem lại lịch sử)
+        if (status === 'delivered') {
+            const notificationData = {
+                userId: customerId,
+                title: "Giao hàng thành công",
+                body: `Đơn hàng ${orderId} của bạn đã được giao thành công.`,
+                type: "order_delivered",
+                orderId: orderId,
+                isRead: false,
+                createdAt: new Date().toISOString()
+            };
+            await db.collection("notifications").add(notificationData);
+        }
+
         // 6. Thông báo qua Socket.io (Real-time)
         const io = req.app.get("socketio");
-        if (io) {
-            io.emit("order_status_changed", {
-                orderId: orderId, // Trả về mã ECO để Frontend dễ nhận diện
+        if (io && customerId) {
+            const room = io.sockets.adapter.rooms.get(customerId);
+            console.log(`>>> Căn phòng [${customerId}] hiện đang có: ${room ? room.size : 0} thiết bị bên trong.`);
+
+            io.to(customerId).emit("order_status_changed", {
+                orderId: orderId,
                 status: status,
                 updateAt: new Date().toISOString(),
+                message: status === 'delivered' ? `Đơn hàng ${orderId} đã giao thành công!` : ''
             });
-            console.log(`>>> [Socket] Đã phát tin hiệu đổi trạng thái cho đơn: ${orderId}`);
+            console.log(`>>> [Socket] Đã phát sóng thành công vào Room: [${customerId}]`);
         }
 
         // 7. Trả về kết quả thành công

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/features/profile/screens/profile_screen.dart';
+import 'package:provider/provider.dart';
 
-// 1. IMPORT CÁC FILE CỦA BẠN (NGƯỜI A)
 import 'features/products/screens/product_list_screen.dart';
 import 'features/notifications/screens/notification_screen.dart';
 import 'features/products/screens/add_edit_product_screen.dart';
+import 'features/notifications/providers/notification_provider.dart'; 
+import 'features/auth/providers/auth_provider.dart';
 
 // 2. IMPORT FILE CỦA PHONG (NGƯỜI B)
 // Chỉnh lại đường dẫn này nếu thư mục của bạn đặt tên khác
@@ -28,6 +30,27 @@ class _MainWrapperState extends State<MainWrapper> {
     CartScreen(),              // Index 3: Tab của B (Class trong file cart_page.dart của Phong)
     ProfileScreen(),
   ];
+
+  // 🚀 HÀM KÍCH HOẠT TỰ ĐỘNG TẢI LẠI KHI CHẠM TAB
+  void _onTabTapped(int index) {
+    // Nếu người dùng bấm trúng Tab Thông báo (Index là 1)
+    if (index == 1) {
+      final authProvider = context.read<AuthProvider>();
+      final notifProvider = context.read<NotificationProvider>();
+      final currentUserId = authProvider.userId;
+
+      if (currentUserId != null) {
+        // Không sử dụng từ khóa await ở đây để giao diện chuyển Tab lập tức, 
+        // luồng mạng chạy ngầm bên dưới mà không gây khựng UI
+        notifProvider.fetchNotifications(currentUserId);
+      }
+    }
+
+    // Luôn luôn cập nhật setState để nhảy sang giao diện Tab mới
+    setState(() {
+      _currentIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,12 +78,7 @@ class _MainWrapperState extends State<MainWrapper> {
       // Thanh điều hướng bên dưới
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) {
-          // Lệnh setState giúp vẽ lại giao diện khi chuyển tab
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onTap: _onTabTapped,
         type: BottomNavigationBarType.fixed, // Giữ cho 4 nút đứng im, không bị co giãn
         selectedItemColor: Colors.green,     // Màu xanh khi đang ở tab đó
         unselectedItemColor: Colors.grey,    // Màu xám khi ở tab khác

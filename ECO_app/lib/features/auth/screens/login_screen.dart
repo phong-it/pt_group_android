@@ -4,6 +4,8 @@ import 'package:local_auth/local_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../main_wrapper.dart';
 import '../providers/auth_provider.dart';
+import '../../chat/services/socket_service.dart';
+import '../../notifications/providers/notification_provider.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -416,6 +418,18 @@ class _AuthScreenState extends State<AuthScreen> {
     } else {
       if (authProvider.isLogin) {
         _showSnackBar(context, "Đăng nhập thành công!", Colors.green);
+        
+        // KÍCH HOẠT HỆ THỐNG REAL-TIME NGAY KHI CÓ USER ID
+        final socketService = context.read<SocketService>();
+        final notifProvider = context.read<NotificationProvider>();
+        final userId = authProvider.userId;
+
+        if (userId != null) {
+          socketService.connect();
+          socketService.joinUserRoom(userId);    
+          notifProvider.setupSocketListener(socketService); // 3. Gắn tai nghe cho App
+        }
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MainWrapper()),

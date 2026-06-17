@@ -8,6 +8,14 @@ const chatSocket = (io) => {
             socket.join(roomId);
         });
 
+        // ĐÂY LÀ ROOM CÁ NHÂN DÀNH CHO THÔNG BÁO 
+        socket.on("join_user_room", (userId) => {
+            if (userId) {
+                socket.join(userId);
+                console.log(`>>> User [${userId}] đã tham gia phòng nhận thông báo.`);
+            }
+        });
+
         socket.on("send_message", async (data) => {
             const { roomId, senderId, content } = data;
             const parts = roomId.split('_');

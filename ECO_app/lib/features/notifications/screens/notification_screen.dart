@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/features/chat/providers/chat_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:timeago/timeago.dart' as timeago; // Thư viện hiển thị thời gian
+import 'package:timeago/timeago.dart' as timeago;
 import '../../../core/constants/app_routes.dart';
 import '../providers/notification_provider.dart';
+import '../../auth/providers/auth_provider.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -13,176 +13,175 @@ class NotificationScreen extends StatefulWidget {
 }
 
 class _NotificationScreenState extends State<NotificationScreen> {
-  // Cài đặt tiếng Việt cho thư viện timeago (Chạy 1 lần khi mở màn hình)
   @override
   void initState() {
     super.initState();
-    timeago.setLocaleMessages('vi', timeago.ViMessages());
+    timeago.setLocaleMessages('vi', timeago.ViMessages()); 
+    
+    // Vẫn giữ initState làm phương án dự phòng khi màn hình được build lần đầu
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
+  }
+
+  // Tách hàm load data ra để tái sử dụng cho tính năng Pull-to-Refresh
+  Future<void> _loadData() async {
+    final notifProvider = context.read<NotificationProvider>();
+    final authProvider = context.read<AuthProvider>();
+    
+    final currentUserId = authProvider.userId;
+    
+    if (currentUserId != null) {
+      // Bỏ điều kiện kiểm tra isEmpty đi để ép buộc tải mới
+      await notifProvider.fetchNotifications(currentUserId); 
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final notifProvider = context.watch<NotificationProvider>();
     final notifications = notifProvider.items;
+    
+    // Giả sử provider của bạn có biến isLoading, nếu chưa có thì có thể bỏ qua
+    // final isLoading = notifProvider.isLoading; 
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          'Thông báo',
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Thông báo', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
-          // Nút "Đánh dấu tất cả đã đọc"
           TextButton(
-            onPressed: () {
-              // Gọi Provider lo việc cập nhật dữ liệu
+            onPressed: notifications.isEmpty ? null : () {
               context.read<NotificationProvider>().markAllAsRead();
             },
-            child: const Text(
-              'Đánh dấu đã đọc',
-              style: TextStyle(color: Colors.green),
+            child: Text(
+              'Đánh dấu đã đọc', 
+              style: TextStyle(color: notifications.isEmpty ? Colors.grey : Colors.green, fontWeight: FontWeight.w600)
             ),
           ),
         ],
       ),
-      body: notifications.isEmpty
-          ? const Center(child: Text('Bạn chưa có thông báo nào.'))
+      // THÊM TÍNH NĂNG VUỐT ĐỂ LÀM MỚI (Pull to Refresh)
+      body: RefreshIndicator(
+        color: Colors.green,
+        onRefresh: _loadData, // Vuốt xuống sẽ tự động gọi lại API
+        child: notifications.isEmpty
+          ? Stack(
+              children: [
+                ListView(), // Phải có ListView trống để RefreshIndicator hoạt động
+                const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.notifications_none, size: 64, color: Colors.black26),
+                      SizedBox(height: 16),
+                      Text('Bạn chưa có thông báo nào.', style: TextStyle(color: Colors.black54)),
+                    ],
+                  ),
+                ),
+              ],
+            )
           : ListView.separated(
+              // Thêm padding cho ListView để UI thoáng hơn
+              padding: const EdgeInsets.symmetric(vertical: 8), 
               itemCount: notifications.length,
-              separatorBuilder: (context, index) =>
-                  const Divider(height: 1, color: Colors.black12),
+              separatorBuilder: (context, index) => const Divider(height: 1, color: Colors.black12),
               itemBuilder: (context, index) {
-                final note =
-                    notifications[index]; // Lúc này note là một Object, không phải Map nữa
-
-                // 3. Sửa lại cách gọi biến (Dùng dấu chấm thay vì ngoặc vuông)
+                final note = notifications[index]; 
+                
                 final isRead = note.isRead;
                 final createdAt = note.createdAt;
                 final timeString = timeago.format(createdAt, locale: 'vi');
 
                 IconData iconData;
                 Color iconColor;
-                if (note.type == 'order') {
-                  // Dùng note.type thay vì note['type']
+                
+                if (note.type == 'order_delivered') { 
                   iconData = Icons.local_shipping_outlined;
                   iconColor = Colors.blue;
                 } else if (note.type == 'eco_point') {
                   iconData = Icons.eco_outlined;
                   iconColor = Colors.green;
                 } else {
-                  iconData = Icons.chat_bubble_outline;
+                  iconData = Icons.info_outline; // Đổi icon mặc định cho hợp lý hơn
                   iconColor = Colors.orange;
                 }
 
-                return InkWell(
-                  onTap: () async {
-                    // 1. Đánh dấu đã đọc
-                    context.read<NotificationProvider>().markAsRead(note.id);
-
-                    // 2. Xử lý điều hướng theo loại thông báo
-                    if (note.type == 'chat' && note.roomId != null) {
-                      // Gọi joinRoom để dọn dẹp tin nhắn cũ và chuẩn bị socket cho phòng mới
-                      await context.read<ChatProvider>().joinRoom(note.roomId!);
-
-                      // Điều hướng sang màn hình Chat (đảm bảo bạn đã định nghĩa route này)
-                      if (!mounted) return;
-                      Navigator.pushNamed(
-                        context,
-                        '/chat_detail', // Thay bằng AppRoutes.chatDetail nếu có
-                        arguments: note.roomId,
-                      );
-                    } else if (note.type == 'order') {
-                      // Xử lý cho đơn hàng...
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    // ĐỔI MÀU NỀN THEO TRẠNG THÁI: Chưa đọc thì nền xanh thật nhạt, Đã đọc thì nền trắng
-                    color: isRead
-                        ? Colors.white
-                        : Colors.green.withOpacity(0.05),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Cột 1: Icon tròn
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: isRead
-                                ? Colors.grey[100]
-                                : iconColor.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            iconData,
-                            color: isRead ? Colors.grey : iconColor,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-
-                        // Cột 2: Nội dung Text
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                note.title,
-                                style: TextStyle(
-                                  fontWeight: isRead
-                                      ? FontWeight.normal
-                                      : FontWeight.bold, // Chưa đọc in đậm
-                                  fontSize: 16,
-                                  color: isRead ? Colors.black87 : Colors.black,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                note.body,
-                                style: TextStyle(
-                                  color: isRead
-                                      ? Colors.grey[600]
-                                      : Colors.black87,
-                                  height: 1.3,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                timeString, // Hiển thị "5 phút trước"
-                                style: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // Cột 3: Chấm xanh báo hiệu Chưa đọc (Nhỏ xíu ở góc phải)
-                        if (!isRead)
+                return Material(
+                  color: isRead ? Colors.white : Colors.green.withOpacity(0.05),
+                  child: InkWell(
+                    onTap: () {
+                      context.read<NotificationProvider>().markAsRead(note.id);
+                      // TODO: Điều hướng sang chi tiết đơn hàng
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16), // Tăng vertical padding
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Container(
-                            margin: const EdgeInsets.only(top: 8),
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: Colors.green,
+                            padding: const EdgeInsets.all(12), // Tăng kích thước bọc icon
+                            decoration: BoxDecoration(
+                              color: isRead ? Colors.grey[100] : iconColor.withOpacity(0.15),
                               shape: BoxShape.circle,
                             ),
+                            child: Icon(iconData, color: isRead ? Colors.grey[400] : iconColor, size: 24),
                           ),
-                      ],
+                          const SizedBox(width: 16), // Tăng khoảng cách giữa icon và text
+                          
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  note.title,
+                                  style: TextStyle(
+                                    fontWeight: isRead ? FontWeight.w500 : FontWeight.bold, 
+                                    fontSize: 16,
+                                    color: isRead ? Colors.black87 : Colors.black,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  note.body,
+                                  style: TextStyle(
+                                    color: isRead ? Colors.grey[600] : Colors.black87, 
+                                    height: 1.4,
+                                    fontSize: 14,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  timeString, 
+                                  style: TextStyle(
+                                    color: isRead ? Colors.grey[400] : Colors.green, // Nhấn mạnh thời gian nếu chưa đọc
+                                    fontSize: 12,
+                                    fontWeight: isRead ? FontWeight.normal : FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          
+                          if (!isRead)
+                            Container(
+                              margin: const EdgeInsets.only(top: 6, left: 8),
+                              width: 10, // Tăng kích thước chấm xanh cho rõ
+                              height: 10,
+                              decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 );
               },
             ),
+      ),
     );
   }
 }

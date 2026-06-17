@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 
 class ApiConfig {
   static const String _ip =
-      "192.168.1.11"; // Đảm bảo IP này đang đúng với IP máy tính
+      "192.168.1.215"; // Đảm bảo IP này đang đúng với IP máy tính
   static const String _port = "3001";
 
   static String get baseUrl {

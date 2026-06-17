@@ -12,6 +12,10 @@ class SocketService {
   final _messageController = StreamController<Map<String, dynamic>>.broadcast();
   Stream<Map<String, dynamic>> get onMessage => _messageController.stream;
 
+  // 2. TẠO MỚI: Stream dành riêng cho thông báo hệ thống/đơn hàng
+  final _notificationController = StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get onNotification => _notificationController.stream;
+
   // SENIOR IMPLEMENTATION: Stream điều phối trạng thái kết nối toàn cục
   final _statusController = StreamController<SocketState>.broadcast();
   Stream<SocketState> get onStatusChanged => _statusController.stream;
@@ -81,6 +85,16 @@ class SocketService {
       }
     });
 
+    // 3. TẠO MỚI: Lắng nghe trạng thái đơn hàng từ Backend và đẩy vào Stream
+    _socket!.on('order_status_changed', (data) {
+      print('🔔 [Socket] Nhận thông báo hệ thống: $data');
+      _notificationController.add(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.onAny((event, data) {
+      print('🔥 [RADAR SOCKET] BẮT ĐƯỢC SÓNG! Tên sự kiện: [$event] - Dữ liệu: $data');
+    });
+
     _socket!.onConnectError((data) => print('❌ Lỗi kết nối Socket: $data'));
     _socket!.onDisconnect((_) => print('🔌 Đã ngắt kết nối Socket'));
   }
@@ -139,6 +153,9 @@ class SocketService {
     }
   }
 
+  // 4. TẠO MỚI: Lệnh định danh User (Để backend biết ném thông báo vào ai)
+  void joinUserRoom(String userId) => _socket?.emit('join_user_room', userId);
+
   // SENIOR ADD: Cung cấp hàm ngắt kết nối an toàn, thay vì để Repo tự can thiệp vào nội bộ socket
   void disconnect() {
     _socket?.disconnect();
@@ -148,5 +165,6 @@ class SocketService {
     _socket?.dispose();
     _messageController.close();
     _orderStatusController.close(); // Đóng controller mới khi dispose
+    _notificationController.close(); 
   }
 }
