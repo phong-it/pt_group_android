@@ -1,3 +1,5 @@
+import 'dart:developer'
+    as developer; // SENIOR ADD: Dùng thư viện chuẩn để quản lý log hệ thống
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,31 +12,62 @@ class UserProvider extends ChangeNotifier {
 
   final ProfileService _profileService = ProfileService();
 
+  // GIỮ NGUYÊN: Getter cũ để các màn hình Profile, Edit hiện tại không bị lỗi biên dịch
   UserModel? get user => _user;
   bool get isLoading => _isLoading;
 
+  // ===========================================================================
+  // SENIOR ADD: KHẮC PHỤC LỖI "UNDEFINED GETTER" CHO CHAT_PROVIDER
+  // ===========================================================================
+  /// Getter trả về dữ liệu User không-được-null.
+  /// Ép buộc hệ thống phải kiểm soát chặt chẽ trạng thái đăng nhập trước khi cho phép Chat/Gửi tin.
+  UserModel get currentUser {
+    if (_user == null) {
+      developer.log(
+        'CRITICAL CRASH PREVENTED: Một tính năng (như Chat) đã cố truy cập User trước khi dữ liệu được tải từ Firestore!',
+        name: 'UserProvider',
+        error: StateError('User data is null'),
+      );
+      // Ném ra một lỗi có cấu trúc rõ ràng thay vì để ứng dụng crash ngầm không rõ nguyên nhân
+      throw StateError(
+        'Xác thực thất bại: Vui lòng đợi dữ liệu tải xong hoặc thực hiện đăng nhập lại.',
+      );
+    }
+    return _user!;
+  }
+
   // HÀM LẤY DỮ LIỆU
   Future<void> fetchUserData() async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) return;
+    final currentUserAuth = FirebaseAuth.instance.currentUser;
+    if (currentUserAuth == null) return;
 
     _isLoading = true;
+    // Bổ sung notifyListeners() ở đây nếu bạn muốn UI hiển thị vòng xoay loading ngay khi bắt đầu gọi API
+    notifyListeners();
 
     try {
       // Tìm document trong bảng 'users' có ID trùng với authId của Firebase
       DocumentSnapshot doc = await FirebaseFirestore.instance
           .collection('users')
-          .doc(currentUser.uid)
+          .doc(currentUserAuth.uid)
           .get();
 
       if (doc.exists) {
         // Dùng đúng hàm fromFirestore mà bạn đã viết
         _user = UserModel.fromFirestore(doc);
       } else {
-        print('Không tìm thấy dữ liệu user trên Firestore');
+        developer.log(
+          'Không tìm thấy dữ liệu user trên Firestore',
+          name: 'UserProvider',
+        );
       }
-    } catch (e) {
-      print('Lỗi khi tải thông tin: $e');
+    } catch (e, stack) {
+      developer.log(
+        'Lỗi khi tải thông tin người dùng',
+        error: e,
+        stackTrace: stack,
+        name: 'UserProvider',
+      );
     } finally {
       _isLoading = false;
       notifyListeners(); // Kích hoạt làm mới giao diện
@@ -47,7 +80,7 @@ class UserProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Hàm edit profile
+  // GIỮ NGUYÊN: Hàm edit profile của bạn để không làm lỗi code UI cũ
   Future<void> edit_profile({
     required String name,
     required String phone,

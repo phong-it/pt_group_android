@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/chat_message_model.dart';
 
 // SENIOR ADD: Định nghĩa các kiểu thực thể tin nhắn hệ thống hỗ trợ
@@ -10,21 +12,26 @@ class ChatMessageModel {
   final String id;
   final String roomId;
   final String senderId;
+  final String senderName; // MỚI: Tên người gửi để hiển thị ngay
+  final String senderAvatar; // MỚI: Avatar người gửi
   final String content;
   final DateTime sentAt;
   final MessageStatus status;
-  final MessageType type; // SENIOR ADD: Thuộc tính phân loại tin nhắn công năng
+  final MessageType type;
+
+  // Helper property: Giúp UI quyết định hiển thị bên trái hay phải
+  bool isMe(String currentUserId) => senderId == currentUserId;
 
   ChatMessageModel({
     required this.id,
     required this.roomId,
     required this.senderId,
+    required this.senderName, // Thêm vào constructor
+    required this.senderAvatar, // Thêm vào constructor
     required this.content,
     required this.sentAt,
-    this.status = MessageStatus
-        .sent, // Mặc định tin nhắn từ DB load lên là đã gửi thành công
-    this.type = MessageType
-        .text, // Mặc định nếu không truyền là tin nhắn văn bản (text)
+    this.status = MessageStatus.sent,
+    this.type = MessageType.text,
   });
 
   // SENIOR DESIGN PATTERN: Cập nhật hàm copyWith để hỗ trợ thay đổi loại tin nhắn nếu cần
@@ -37,32 +44,30 @@ class ChatMessageModel {
       sentAt: sentAt,
       status: status ?? this.status,
       type: type ?? this.type,
+      senderName: senderName,
+      senderAvatar: senderAvatar,
     );
   }
 
   factory ChatMessageModel.fromJson(Map<String, dynamic> json) {
-    // Parse trạng thái gửi tin nhắn
-    MessageStatus parsedStatus = MessageStatus.sent;
-    if (json['status'] == 'sending') parsedStatus = MessageStatus.sending;
-    if (json['status'] == 'failed') parsedStatus = MessageStatus.failed;
-
-    // SENIOR DEFENSIVE CODE: Cơ chế phòng vệ phân tách kiểu dữ liệu an toàn.
-    // Nếu tương lai Backend thêm type mới (ví dụ: 'video') mà Client bản cũ chưa cập nhật,
-    // ứng dụng sẽ tự động fallback về dạng 'text' để không bị crash giao diện người dùng.
-    MessageType parsedType = MessageType.text;
-    if (json['type'] == 'image') parsedType = MessageType.image;
-    if (json['type'] == 'system') parsedType = MessageType.system;
-
     return ChatMessageModel(
       id: json['id'] ?? '',
       roomId: json['roomId'] ?? '',
       senderId: json['senderId'] ?? '',
+      senderName: json['senderName'] ?? 'Unknown', // Mặc định nếu chưa có
+      senderAvatar: json['senderAvatar'] ?? '',
       content: json['content'] ?? '',
-      sentAt: json['sentAt'] != null
-          ? DateTime.parse(json['sentAt'])
-          : DateTime.now(),
-      status: parsedStatus,
-      type: parsedType,
+      sentAt: json['sentAt'] is Timestamp
+          ? (json['sentAt'] as Timestamp).toDate()
+          : DateTime.now(), // Xử lý tốt hơn với kiểu Timestamp của Firestore
+      status: MessageStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => MessageStatus.sent,
+      ),
+      type: MessageType.values.firstWhere(
+        (e) => e.name == json['type'],
+        orElse: () => MessageType.text,
+      ),
     );
   }
 
@@ -76,6 +81,8 @@ class ChatMessageModel {
       'status': status.name,
       'type': type
           .name, // Chuyển enum sang String ('text', 'image', 'system') để lưu lên DB/Socket
+      'senderName': senderName,
+      'senderAvatar': senderAvatar,
     };
   }
 }
