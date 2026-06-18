@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/features/chat/services/socket_service.dart';
 import 'package:frontend/features/notifications/providers/notification_provider.dart';
+import 'package:frontend/features/profile/providers/user_provider.dart';
 import '../models/chat_message_model.dart';
 import '../repositories/chat_repository.dart';
 import '../../../features/notifications/models/notification_model.dart';
@@ -9,6 +10,7 @@ import 'package:uuid/uuid.dart';
 class ChatProvider extends ChangeNotifier {
   final ChatRepository _chatRepository;
   final NotificationProvider _notificationProvider;
+  final UserProvider _userProvider;
 
   // SENIOR DESIGN: Khởi tạo một instance Uuid cố định (mục đích tối ưu bộ nhớ, tránh tạo đi tạo lại)
   static const _uuid = Uuid();
@@ -34,9 +36,14 @@ class ChatProvider extends ChangeNotifier {
   bool get isFetchingMore => _isFetchingMore;
   bool get hasMore => _hasMore;
 
-  ChatProvider(this._chatRepository, this._notificationProvider) {
+  // Sử dụng một tên public cho tham số truyền vào
+  ChatProvider(
+    this._chatRepository,
+    this._notificationProvider, {
+    required UserProvider userProvider, // Không dùng dấu _ ở đây
+  }) : _userProvider = userProvider {
     _initSocketListener();
-    _listenToConnectionStatus(); // SENIOR KICKSTART: Lắng nghe trạng thái mạng
+    _listenToConnectionStatus();
   }
 
   // SENIOR IMPLEMENTATION: Theo dõi biến động mạng để ra lệnh cập nhật UI
@@ -139,27 +146,31 @@ class ChatProvider extends ChangeNotifier {
   }
 
   // SENIOR REFACTOR: Hàm kích hoạt gửi tin nhắn kèm cơ chế ACK tường minh
-  void SendMessage(String content, String roomId, String userId) {
+  void sendMessage(String content, String roomId) {
     if (content.trim().isEmpty) return;
 
-    final String secureMessageId = _uuid.v4();
+    final user = _userProvider.currentUser; // Lấy thông tin user hiện tại
+    final String msgId = _uuid.v4(); // ID cố định cho vòng đời tin nhắn
+
     final newMsg = ChatMessageModel(
-      id: secureMessageId,
+      id: msgId,
       roomId: roomId,
-      senderId: userId,
+      senderId: user.id,
+      senderName: user.name, // Lấy từ provider
+      senderAvatar: user.avatar,
       content: content,
       sentAt: DateTime.now(),
       status: MessageStatus.sending,
     );
 
-    // Kích hoạt Optimistic UI bằng cách nạp tin nhắn vừa viết vào bộ xử lý tập trung
     _internalAddMessages([newMsg]);
 
     _chatRepository.sendMessage(
       newMsg,
       onResult: (isSuccess) {
+        // Dùng ID để update chính xác tin nhắn đó, không tạo mới
         _updateMessageStatus(
-          secureMessageId,
+          msgId,
           isSuccess ? MessageStatus.sent : MessageStatus.failed,
         );
       },
@@ -197,40 +208,26 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
-  void _internalAddMessages(List<ChatMessageModel> newMessages) {
-    if (newMessages.isEmpty) return;
+  void _internalAddMessages(List<ChatMessageModel> incoming) {
+    bool hasChanged = false;
 
-    bool hasNewData = false;
+    for (var msg in incoming) {
+      final index = _messages.indexWhere((m) => m.id == msg.id);
 
-    // KỸ THUẬT SENIOR 1: Thay vì dùng .any() chạy vòng lặp lồng O(N*M) gây lag,
-    // ta chuyển mảng ID hiện tại thành một HASH SET.
-    // Việc tra cứu phần tử trong Set đạt độ phức tạp O(1), tối ưu tuyệt đối tốc độ check trùng dữ liệu.
-    final Set<String> existingIds = _messages.map((m) => m.id).toSet();
-
-    // Duyệt qua danh sách tin nhắn mới truyền vào (Có thể là 1 tin realtime hoặc 20 tin lịch sử)
-    for (final msg in newMessages) {
-      // Nếu là tin tự gửi mà từ luồng ACK/Socket trả về trùng, ta không ghi đè dữ liệu thô
-      final bool isSelfSentDuplicate = _messages.any(
-        (existing) =>
-            existing.id == msg.id && existing.status == MessageStatus.sending,
-      );
-      if (isSelfSentDuplicate) continue;
-
-      // Kiểm tra xem ID tin nhắn này đã xuất hiện trên giao diện chưa bằng cụm Set O(1)
-      if (!existingIds.contains(msg.id)) {
-        _messages.add(
-          msg,
-        ); // Thêm thô vào mảng, TUYỆT ĐỐI không gọi sort() hay notifyListeners() ở đây
-        hasNewData = true;
+      if (index != -1) {
+        // Nếu đã tồn tại (ví dụ: đang ở trạng thái sending), chỉ cập nhật nếu trạng thái khác biệt
+        if (_messages[index].status != msg.status) {
+          _messages[index] = msg;
+          hasChanged = true;
+        }
+      } else {
+        _messages.add(msg);
+        hasChanged = true;
       }
     }
 
-    // KỸ THUẬT SENIOR 2: CHỐT HẠ NGHẼN CỔ CHAI (Gộp xong xuôi hết mới xử lý bề nổi)
-    if (hasNewData) {
-      // Thực hiện sắp xếp lại mảng ĐÚNG 1 LẦN DUY NHẤT sau khi đã gom sạch dữ liệu
+    if (hasChanged) {
       _messages.sort((a, b) => b.sentAt.compareTo(a.sentAt));
-
-      // Chỉ ra lệnh cho hệ thống render UI ĐÚNG 1 LẦN DUY NHẤT, triệt tiêu hiện tượng flickering (nháy màn hình)
       notifyListeners();
     }
   }
@@ -263,7 +260,9 @@ class ChatProvider extends ChangeNotifier {
       senderId: failedMsg.senderId,
       content: failedMsg.content,
       sentAt: DateTime.now(), // Làm mới thời gian phát hành tin nhắn
-      status: MessageStatus.sending, // Đưa về trạng thái chờ gửi
+      status: MessageStatus.sending,
+      senderName: '',
+      senderAvatar: '', // Đưa về trạng thái chờ gửi
     );
 
     // 3. Sắp xếp lại mảng cục bộ vì một phần tử vừa thay đổi mốc thời gian

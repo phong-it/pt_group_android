@@ -55,17 +55,27 @@ void main() async {
         ),
 
         // 3. Tạo ChatProvider: Phụ thuộc vào cả Repo và NotificationProvider
-        ChangeNotifierProxyProvider2<
+        ChangeNotifierProxyProvider3<
           ChatRepository,
           NotificationProvider,
+          UserProvider, // Thêm UserProvider vào đây
           ChatProvider
         >(
           create: (context) => ChatProvider(
             context.read<ChatRepository>(),
             context.read<NotificationProvider>(),
+            userProvider: context
+                .read<UserProvider>(), // Truyền đúng tên tham số
           ),
-          update: (context, repo, notif, previous) =>
-              previous ?? ChatProvider(repo, notif),
+          update: (context, repo, notif, user, previous) {
+            // Nếu provider đã tồn tại, bạn có thể trả về nó hoặc tạo mới nếu các dependency thay đổi
+            return previous ??
+                ChatProvider(
+                  repo,
+                  notif,
+                  userProvider: user, // Cập nhật UserProvider mới
+                );
+          },
         ),
       ],
       child: const MyApp(),
