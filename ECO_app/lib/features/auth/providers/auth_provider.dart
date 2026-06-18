@@ -27,7 +27,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Xử lý logic chung cho cả SignIn và SignUp (Giữ nguyên)
+  // Xử lý logic chung cho cả SignIn và SignUp
   Future<String?> authenticate({
     required String email,
     required String password,
@@ -35,7 +35,41 @@ class AuthProvider extends ChangeNotifier {
     String? address,
     String? phone,
   }) async {
-    // ... (Đoạn code cũ của bạn giữ nguyên) ...
+    _isLoading = true;
+    notifyListeners(); // Cập nhật UI hiển thị vòng quay loading
+
+    String? errorMessage;
+
+    try {
+      if (_isLogin) {
+        errorMessage = await _authService.signIn(
+          email: email,
+          password: password,
+        );
+      } else {
+        if (name == null ||
+            name.isEmpty ||
+            address == null ||
+            address.isEmpty) {
+          errorMessage = "Vui lòng nhập đầy đủ Họ tên và Địa chỉ!";
+        } else {
+          errorMessage = await _authService.signUp(
+            email: email,
+            password: password,
+            name: name,
+            address: address,
+            phone: phone ?? '',
+          );
+        }
+      }
+    } catch (e) {
+      errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners(); // Tắt vòng quay loading
+    }
+
+    return errorMessage;
   }
 
   // ===== THÊM MỚI HÀM NÀY ĐỂ XỬ LÝ GOOGLE SIGN IN =====
