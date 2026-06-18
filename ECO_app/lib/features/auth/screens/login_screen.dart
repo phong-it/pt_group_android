@@ -85,46 +85,36 @@ class _AuthScreenState extends State<AuthScreen> {
 
   // LOGIC 2: Xử lý đăng nhập mạng xã hội (Google)
   Future<void> _handleGoogleSignIn(BuildContext context) async {
-    try {
-      final GoogleSignIn googleSignIn = GoogleSignIn(scopes: ['email']);
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+    // Gọi sang Provider để xử lý tất cả (Mở hộp thoại Google -> Firebase Auth -> Firestore)
+    final errorMessage = await context
+        .read<AuthProvider>()
+        .authenticateWithGoogle();
 
-      if (googleUser == null) {
-        // Người dùng chủ động hủy hộp thoại chọn tài khoản Google
-        return;
+    if (!context.mounted) return;
+
+    if (errorMessage != null) {
+      _showSnackBar(context, errorMessage, Colors.red);
+    } else {
+      // Đăng nhập thành công, thông báo cho người dùng
+      _showSnackBar(context, "Đăng nhập Google thành công!", Colors.green);
+
+      // Khởi tạo Socket và Notification giống như lúc đăng nhập bằng Email
+      final authProvider = context.read<AuthProvider>();
+      final socketService = context.read<SocketService>();
+      final notifProvider = context.read<NotificationProvider>();
+      final userId = authProvider.userId;
+
+      if (userId != null) {
+        socketService.connect();
+        socketService.joinUserRoom(userId);
+        notifProvider.setupSocketListener(socketService);
       }
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final String? idToken =
-          googleAuth.idToken; // Token dùng để gửi lên Backend
-
-      if (!context.mounted) return;
-
-      if (idToken != null) {
-        _showSnackBar(
-          context,
-          "Đang xác thực tài khoản Google...",
-          Colors.blue,
-        );
-
-        // TODO: Gửi idToken này sang AuthProvider để gọi API Backend xác thực
-        // final errorMessage = await context.read<AuthProvider>().authenticateWithGoogle(idToken);
-
-        // Giả lập điều hướng thành công sau khi backend verify token thành công
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainWrapper()),
-        );
-      } else {
-        _showSnackBar(
-          context,
-          "Không lấy được mã xác thực từ Google.",
-          Colors.red,
-        );
-      }
-    } catch (e) {
-      _showSnackBar(context, "Đăng nhập Google thất bại: $e", Colors.red);
+      // Điều hướng vào màn hình chính của app
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainWrapper()),
+      );
     }
   }
 
@@ -418,7 +408,7 @@ class _AuthScreenState extends State<AuthScreen> {
     } else {
       if (authProvider.isLogin) {
         _showSnackBar(context, "Đăng nhập thành công!", Colors.green);
-        
+
         // KÍCH HOẠT HỆ THỐNG REAL-TIME NGAY KHI CÓ USER ID
         final socketService = context.read<SocketService>();
         final notifProvider = context.read<NotificationProvider>();
@@ -426,8 +416,10 @@ class _AuthScreenState extends State<AuthScreen> {
 
         if (userId != null) {
           socketService.connect();
-          socketService.joinUserRoom(userId);    
-          notifProvider.setupSocketListener(socketService); // 3. Gắn tai nghe cho App
+          socketService.joinUserRoom(userId);
+          notifProvider.setupSocketListener(
+            socketService,
+          ); // 3. Gắn tai nghe cho App
         }
 
         Navigator.pushReplacement(
